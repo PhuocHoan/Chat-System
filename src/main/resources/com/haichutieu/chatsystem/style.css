@@ -1,0 +1,44 @@
+GridPane.login {
+    -fx-background-color: white;
+}
+
+#header.login {
+    -fx-font-size: 36px;
+}
+
+#username.login, #password.login {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.login.username, .login.password {
+    -fx-font-size: 16px;
+    -fx-pref-width: 411px;
+    -fx-max-width: 411px;
+    -fx-pref-height: 48px;
+    -fx-text-fill: #C1C1C1;
+    -fx-background-color: #fafafa;
+}
+
+#register.login, #forget.login {
+    -fx-font-size: 15px;
+    -fx-text-fill: #00A6FF;
+}
+
+Button.login {
+    -fx-background-color: #00A6FF;
+    -fx-text-fill: white;
+    -fx-pref-width: 411px;
+    -fx-pref-height: 49px;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+GridPane.login AnchorPane.right {
+    -fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);
+}
+
+Label.right {
+    -fx-font-size: 32px;
+    -fx-text-fill: white;
+}
