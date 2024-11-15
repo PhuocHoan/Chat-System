@@ -1,4 +1,4 @@
-GridPane.login {
+.root {
     -fx-background-color: white;
 }
 
@@ -6,18 +6,19 @@ GridPane.login {
     -fx-font-size: 36px;
 }
 
-#username.login, #password.login {
+Text.username.login, Text.password.login {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
 }
 
-.login.username, .login.password {
+.login.username.field, .login.password.field {
     -fx-font-size: 16px;
-    -fx-pref-width: 411px;
-    -fx-max-width: 411px;
-    -fx-pref-height: 48px;
-    -fx-text-fill: #C1C1C1;
     -fx-background-color: #fafafa;
+    -fx-background-radius: 10px;
+}
+
+.login.username.field:hover, .login.password.field:hover {
+    -fx-background-color: #f0f0f0;
 }
 
 #register.login, #forget.login {
@@ -25,16 +26,33 @@ GridPane.login {
     -fx-text-fill: #00A6FF;
 }
 
+#register.login:hover, #forget.login:hover {
+    -fx-text-fill: #0077CC;
+    -fx-cursor: hand;
+}
+
+#register.login:pressed, #forget.login:pressed {
+    -fx-text-fill: #005299;
+}
+
 Button.login {
     -fx-background-color: #00A6FF;
     -fx-text-fill: white;
-    -fx-pref-width: 411px;
-    -fx-pref-height: 49px;
     -fx-font-size: 20px;
     -fx-font-weight: bold;
+    -fx-background-radius: 8px;
 }
 
-GridPane.login AnchorPane.right {
+Button.login:hover {
+    -fx-background-color: #0077CC;
+    -fx-cursor: hand;
+}
+
+Button.login:pressed {
+    -fx-background-color: #005299;
+}
+
+.login.right {
     -fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);
 }
 

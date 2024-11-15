@@ -16,6 +16,8 @@ public class App extends Application {
         scene.getStylesheets().add(App.class.getResource("style.css").toExternalForm()); // apply style.css to javafx
         stage.setTitle("Chat System");
         stage.setScene(scene);
+        stage.setMinHeight(800);
+        stage.setMinWidth(900);
         stage.setMaximized(true);
         stage.show();
     }
