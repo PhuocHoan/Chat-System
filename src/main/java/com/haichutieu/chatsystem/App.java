@@ -14,6 +14,8 @@ public class App extends Application {
         Scene scene = new Scene(fxmlLoader.load());
         stage.setTitle("Chat System");
         stage.setScene(scene);
+        stage.setMinHeight(720);
+        stage.setMinWidth(1280);
         stage.setMaximized(true);
         stage.show();
     }
