@@ -1,0 +1,33 @@
+* {
+    -fx-main-background: rgba(255, 255, 255, .7);
+    -fx-bg-blue: rgba(127, 81, 255, .8);
+}
+
+.wrapper {
+    -fx-background-color: -fx-main-background;
+    -fx-background-radius: 12;
+}
+
+.sidebar-btn {
+    -fx-background-radius: 8px;
+    -fx-pref-height: 50;
+}
+
+.tab-user-management {
+
+}
+
+#btn-default {
+    -fx-background-color: -fx-main-background;
+}
+
+#btn-chosen {
+    -fx-background-color: -fx-bg-blue;
+}
+
+#btn-logout {
+    -fx-background-radius: 8px;
+    -fx-background-color: rgba(255, 0, 0, .5);
+    -fx-pref-height: 50;
+}
+

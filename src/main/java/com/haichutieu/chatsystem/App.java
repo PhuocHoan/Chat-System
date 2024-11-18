@@ -7,23 +7,15 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class App extends Application {
-    public static void main(String[] args) {
-        launch();
-    }
-
-    @Override
-    public void start(Stage stage) {
-        try {
-            FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("client/login.fxml"));
-            Scene scene = new Scene(fxmlLoader.load());
-            scene.getStylesheets().add(App.class.getResource("style.css").toExternalForm()); // apply style.css to javafx
-            stage.setTitle("Chat System");
-            stage.setScene(scene);
-            stage.setMinHeight(700);
-            stage.setMinWidth(900);
-            stage.show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+@Override
+public void start(Stage stage) throws IOException {
+    FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("app.fxml"));
+    Scene scene = new Scene(fxmlLoader.load());
+    scene.getStylesheets().add(App.class.getResource("style.css").toExternalForm()); // apply style.css to javafx
+    stage.setTitle("Chat System");
+    stage.setScene(scene);
+    stage.setMinHeight(720);
+    stage.setMinWidth(1280);
+    stage.setMaximized(true);
+    stage.show();
 }
