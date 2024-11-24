@@ -9,6 +9,7 @@
 
 Text.username.login,
 Text.password.login,
+Text.name.signup,
 Text.username.signup,
 Text.password.signup,
 Text.email.signup,
@@ -19,17 +20,19 @@ Text.confirm-password.signup {
 
 .login.username.field,
 .login.password.field,
+.field.name.signup,
 .field.username.signup,
 .field.password.signup,
 .field.email.signup,
 .field.confirm-password.signup {
     -fx-font-size: 16px;
     -fx-background-color: #fafafa;
-    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
 }
 
 .login.username.field:hover,
 .login.password.field:hover,
+.field.name.signup:hover,
 .field.username.signup:hover,
 .field.password.signup:hover,
 .field.email.signup:hover,
@@ -83,4 +86,8 @@ Button.login:pressed {
 Label.right {
     -fx-font-size: 32px;
     -fx-text-fill: white;
+}
+
+.error.field {
+    -fx-border-color: red;
 }

@@ -17,7 +17,7 @@
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.text.TextFlow?>
 
-<GridPane maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<GridPane fx:id="screen" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.gui.client.Chat">
   <columnConstraints>
     <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="40.0" percentWidth="5.0" prefWidth="40.0" />
     <ColumnConstraints hgrow="SOMETIMES" percentWidth="28.0" />
@@ -186,7 +186,7 @@
                               </GridPane>
                               <ImageView fitHeight="59.0" fitWidth="55.0" nodeOrientation="INHERIT" pickOnBounds="true" preserveRatio="true" GridPane.halignment="CENTER" GridPane.rowSpan="2">
                                  <image>
-                                    <Image url="@client/assets/avatar.png" />
+                                    <Image url="@assets/avatar.png" />
                                  </image>
                               </ImageView>
                               <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Hello World!" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.valignment="TOP">

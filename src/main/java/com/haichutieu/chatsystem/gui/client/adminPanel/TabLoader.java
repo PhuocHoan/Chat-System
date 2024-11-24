@@ -1,4 +1,4 @@
-package com.haichutieu.chatsystem.client.adminPanel;
+package com.haichutieu.chatsystem.gui.client.adminPanel;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.Pane;

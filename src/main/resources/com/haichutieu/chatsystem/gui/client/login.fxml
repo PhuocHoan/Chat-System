@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.Login">
+<HBox fx:id="screen" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.gui.client.Login">
    <children>
       <VBox alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="250.0" minWidth="411.0" prefWidth="960.0">
          <children>
@@ -71,7 +71,7 @@
                   </HBox>
                </children>
             </VBox>
-            <Button fx:id="button" mnemonicParsing="false" prefHeight="50.0" prefWidth="411.0" styleClass="login" text="Login">
+            <Button fx:id="button" mnemonicParsing="false" onMouseClicked="#login" prefHeight="50.0" prefWidth="411.0" styleClass="login" text="Login">
                <VBox.margin>
                   <Insets top="40.0" />
                </VBox.margin>

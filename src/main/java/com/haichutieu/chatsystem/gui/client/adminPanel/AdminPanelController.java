@@ -1,10 +1,9 @@
-package com.haichutieu.chatsystem.client.adminPanel;
+package com.haichutieu.chatsystem.gui.client.adminPanel;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 
 public class AdminPanelController {
     @FXML
@@ -36,7 +35,7 @@ public class AdminPanelController {
         statisticBtn.setId("btn-default");
 
         tabPane.getChildren().removeLast();
-        tabPane.add(tabLoader.getPane("userManagement"),1,0 );
+        tabPane.add(tabLoader.getPane("userManagement"), 1, 0);
     }
 
     @FXML
@@ -50,7 +49,7 @@ public class AdminPanelController {
         statisticBtn.setId("btn-default");
 
         tabPane.getChildren().removeLast();
-        tabPane.add(tabLoader.getPane("chatGroup"),1,0 );
+        tabPane.add(tabLoader.getPane("chatGroup"), 1, 0);
     }
 
     @FXML
@@ -64,7 +63,7 @@ public class AdminPanelController {
         statisticBtn.setId("btn-default");
 
         tabPane.getChildren().removeLast();
-        tabPane.add(tabLoader.getPane("friend"),1,0 );
+        tabPane.add(tabLoader.getPane("friend"), 1, 0);
     }
 
     @FXML
@@ -78,7 +77,7 @@ public class AdminPanelController {
         statisticBtn.setId("btn-default");
 
         tabPane.getChildren().removeLast();
-        tabPane.add(tabLoader.getPane("report"),1,0 );
+        tabPane.add(tabLoader.getPane("report"), 1, 0);
     }
 
     @FXML
@@ -92,6 +91,6 @@ public class AdminPanelController {
         reportBtn.setId("btn-default");
 
         tabPane.getChildren().removeLast();
-        tabPane.add(tabLoader.getPane("statistics"),1,0 );
+        tabPane.add(tabLoader.getPane("statistics"), 1, 0);
     }
 }

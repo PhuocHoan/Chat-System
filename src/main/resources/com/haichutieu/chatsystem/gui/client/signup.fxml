@@ -6,24 +6,92 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<HBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.Signup">
+<HBox fx:id="screen" alignment="CENTER" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.gui.client.Signup">
    <children>
       <VBox alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="250.0" minWidth="411.0" prefWidth="960.0">
          <children>
             <Text id="header" strokeType="OUTSIDE" strokeWidth="0.0" styleClass="signup" text="Register new account" textAlignment="CENTER" wrappingWidth="410.62249755859375">
                <VBox.margin>
-                  <Insets bottom="40.0" />
+                  <Insets bottom="20.0" top="-40.0" />
                </VBox.margin>
             </Text>
-            <VBox alignment="CENTER_LEFT" maxWidth="411.0" minWidth="353.0" prefHeight="420.0" prefWidth="353.0">
+            <HBox fx:id="alert" alignment="CENTER" maxWidth="400.0" prefHeight="65.0" prefWidth="421.0" style="-fx-background-color: #fcf1f4; -fx-background-radius: 10;">
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
                <children>
-                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Username" wrappingWidth="98.84296417236328">
+                  <ImageView fitHeight="26.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../assets/mark.png" />
+                     </image>
+                  </ImageView>
+                  <VBox alignment="CENTER">
+                     <children>
+                        <HBox maxWidth="500.0">
+                           <children>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="We couldn't create your account.">
+                                 <font>
+                                    <Font name="System Bold" size="20.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets left="10.0" />
+                                 </HBox.margin>
+                              </Text>
+                           </children>
+                        </HBox>
+                        <HBox maxWidth="500.0">
+                           <children>
+                              <Text fx:id="alertText" strokeType="OUTSIDE" strokeWidth="0.0" text="Please check your responses and try again.">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets left="10.0" />
+                                 </HBox.margin>
+                              </Text>
+                           </children>
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                        </HBox>
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            <VBox fx:id="fieldContainer" alignment="CENTER_LEFT" maxWidth="411.0" minWidth="353.0" prefHeight="420.0" prefWidth="353.0">
+               <children>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Name" wrappingWidth="98.84296417236328">
+                     <styleClass>
+                        <String fx:value="signup" />
+                        <String fx:value="name" />
+                     </styleClass>
+                     <VBox.margin>
+                        <Insets bottom="5.0" />
+                     </VBox.margin>
+                  </Text>
+                  <TextField fx:id="name" maxWidth="411.0" minWidth="411.0" prefHeight="48.0" promptText="Enter your name...">
+                     <styleClass>
+                        <String fx:value="signup" />
+                        <String fx:value="name" />
+                        <String fx:value="field" />
+                     </styleClass>
+                     <opaqueInsets>
+                        <Insets />
+                     </opaqueInsets>
                      <VBox.margin>
                         <Insets bottom="10.0" />
+                     </VBox.margin>
+                  </TextField>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Username" wrappingWidth="98.84296417236328">
+                     <VBox.margin>
+                        <Insets bottom="5.0" top="10.0" />
                      </VBox.margin>
                      <styleClass>
                         <String fx:value="signup" />
@@ -40,7 +108,7 @@
                         <Insets />
                      </opaqueInsets>
                      <VBox.margin>
-                        <Insets bottom="30.0" />
+                        <Insets bottom="10.0" />
                      </VBox.margin>
                   </TextField>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Email" wrappingWidth="98.84296417236328">
@@ -49,7 +117,7 @@
                         <String fx:value="email" />
                      </styleClass>
                      <VBox.margin>
-                        <Insets bottom="10.0" />
+                        <Insets bottom="5.0" top="10.0" />
                      </VBox.margin>
                   </Text>
                   <TextField fx:id="email" maxWidth="411.0" minWidth="411.0" prefHeight="48.0" promptText="Enter your email...">
@@ -62,12 +130,12 @@
                         <Insets />
                      </opaqueInsets>
                      <VBox.margin>
-                        <Insets bottom="30.0" />
+                        <Insets bottom="10.0" />
                      </VBox.margin>
                   </TextField>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Password" wrappingWidth="90.76016235351562">
                      <VBox.margin>
-                        <Insets bottom="10.0" />
+                        <Insets bottom="5.0" top="10.0" />
                      </VBox.margin>
                      <styleClass>
                         <String fx:value="signup" />
@@ -81,7 +149,7 @@
                         <String fx:value="field" />
                      </styleClass>
                      <VBox.margin>
-                        <Insets bottom="30.0" />
+                        <Insets bottom="10.0" />
                      </VBox.margin>
 
                                                                                                                                                                         </PasswordField>
@@ -91,7 +159,7 @@
                         <String fx:value="confirm-password" />
                      </styleClass>
                      <VBox.margin>
-                        <Insets bottom="10.0" />
+                        <Insets bottom="5.0" top="10.0" />
                      </VBox.margin>
                   </Text>
                   <PasswordField fx:id="confirmPassword" maxWidth="411.0" minWidth="411.0" prefHeight="48.0" promptText="Re-enter your password...">
@@ -100,10 +168,13 @@
                         <String fx:value="confirm-password" />
                         <String fx:value="field" />
                      </styleClass>
+                     <VBox.margin>
+                        <Insets bottom="10.0" />
+                     </VBox.margin>
                   </PasswordField>
                   <Label id="already" fx:id="alreadyAccount" onMouseClicked="#switchToLogin" prefHeight="22.0" prefWidth="162.0" styleClass="signup" text="Already got an account?">
                      <VBox.margin>
-                        <Insets top="20.0" />
+                        <Insets top="5.0" />
                      </VBox.margin>
                   </Label>
                   <HBox maxWidth="411.0" minWidth="411.0">
@@ -113,9 +184,9 @@
                   </HBox>
                </children>
             </VBox>
-            <Button fx:id="button" mnemonicParsing="false" prefHeight="50.0" prefWidth="411.0" styleClass="signup" text="Register">
+            <Button fx:id="button" mnemonicParsing="false" onMouseClicked="#register" prefHeight="50.0" prefWidth="411.0" styleClass="signup" text="Register">
                <VBox.margin>
-                  <Insets top="20.0" />
+                  <Insets />
                </VBox.margin>
             </Button>
          </children>

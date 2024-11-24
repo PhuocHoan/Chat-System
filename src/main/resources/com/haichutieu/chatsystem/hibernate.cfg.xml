@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 5.3//EN"
+        "http://hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="connection.url">
+            jdbc:postgresql://db-chatsystem-chat-system-java.e.aivencloud.com:15443/defaultdb?ssl=require
+        </property>
+        <property name="connection.username">avnadmin</property>
+        <property name="connection.password">AVNS_5GxNDrgTvuVB3-hSeac</property>
+        <mapping class="com.haichutieu.chatsystem.dto.Customer"/>
+    </session-factory>
+</hibernate-configuration>

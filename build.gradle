@@ -26,7 +26,7 @@ tasks.withType(JavaCompile) {
 
 application {
     mainModule = 'com.haichutieu.chatsystem'
-    mainClass = 'com.haichutieu.chatsystem.HelloApplication'
+    mainClass = 'com.haichutieu.chatsystem.App'
 }
 
 javafx {
@@ -35,9 +35,13 @@ javafx {
 }
 
 dependencies {
-
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    implementation enforcedPlatform("org.hibernate.orm:hibernate-platform:6.6.3.Final")
+    // use the versions from the platform
+    implementation "org.hibernate.orm:hibernate-core"
+    implementation "jakarta.transaction:jakarta.transaction-api"
+    implementation 'org.postgresql:postgresql:42.7.4'
 }
 
 test {

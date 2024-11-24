@@ -1,21 +1,21 @@
 package com.haichutieu.chatsystem;
 
-import com.haichutieu.chatsystem.client.Login;
+import com.haichutieu.chatsystem.bus.SceneController;
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class App extends Application {
-@Override
-public void start(Stage stage) throws IOException {
-    FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("app.fxml"));
-    Scene scene = new Scene(fxmlLoader.load());
-    scene.getStylesheets().add(App.class.getResource("style.css").toExternalForm()); // apply style.css to javafx
-    stage.setTitle("Chat System");
-    stage.setScene(scene);
-    stage.setMinHeight(720);
-    stage.setMinWidth(1280);
-    stage.setMaximized(true);
-    stage.show();
+    @Override
+    public void start(Stage primaryStage) throws IOException {
+        SceneController.setPrimaryStage(primaryStage);
+        SceneController.initScenes();
+        SceneController.primaryStage.setTitle("Chat System");
+        SceneController.setScene("login");
+        SceneController.primaryStage.setMinHeight(770);
+        SceneController.primaryStage.setMinWidth(1280);
+        SceneController.primaryStage.setMaximized(true);
+        SceneController.primaryStage.show();
+    }
 }
