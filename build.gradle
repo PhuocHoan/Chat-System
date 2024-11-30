@@ -42,6 +42,8 @@ dependencies {
     implementation "org.hibernate.orm:hibernate-core"
     implementation "jakarta.transaction:jakarta.transaction-api"
     implementation 'org.postgresql:postgresql:42.7.4'
+
+    implementation 'com.google.code.gson:gson:2.11.0'
 }
 
 test {
