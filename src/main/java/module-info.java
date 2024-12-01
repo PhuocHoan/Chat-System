@@ -4,10 +4,13 @@ module system.chatsystem {
     requires org.hibernate.orm.core;
     requires jakarta.persistence;
     requires java.naming;
+    requires jdk.httpserver;
 
 
-    opens com.haichutieu.chatsystem to javafx.fxml;
-    exports com.haichutieu.chatsystem;
-    exports com.haichutieu.chatsystem.gui.client;
-    opens com.haichutieu.chatsystem.gui.client to javafx.fxml;
+    exports com.haichutieu.chatsystem.client.gui;
+    opens com.haichutieu.chatsystem.client.gui to javafx.fxml;
+    exports com.haichutieu.chatsystem.client;
+    opens com.haichutieu.chatsystem.client to javafx.fxml;
+    exports com.haichutieu.chatsystem.client.util;
+    opens com.haichutieu.chatsystem.client.util to javafx.fxml;
 }

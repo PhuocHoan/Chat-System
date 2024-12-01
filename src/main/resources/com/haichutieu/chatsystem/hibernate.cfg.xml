@@ -10,6 +10,7 @@
         </property>
         <property name="connection.username">avnadmin</property>
         <property name="connection.password">AVNS_5GxNDrgTvuVB3-hSeac</property>
-        <mapping class="com.haichutieu.chatsystem.dto.Customer"/>
+        <mapping class="com.haichutieu.chatsystem.server.dto.Customer"/>
+        <mapping class="com.haichutieu.chatsystem.server.dto.FriendList"/>
     </session-factory>
 </hibernate-configuration>
