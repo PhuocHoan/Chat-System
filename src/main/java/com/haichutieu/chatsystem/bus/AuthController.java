@@ -9,9 +9,6 @@ import java.util.List;
 
 public class AuthController {
     public static String handleRegister(List<TextField> fields) {
-        if (CustomerService.getCustomerByName(fields.get(0).getText()) != null) {
-            return "Name already exists";
-        }
         if (CustomerService.getCustomerByUsername(fields.get(1).getText()) != null) {
             return "Username already exists";
         }

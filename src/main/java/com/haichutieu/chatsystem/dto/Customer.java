@@ -8,14 +8,13 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "customer", uniqueConstraints = {
         @UniqueConstraint(columnNames = "username"),
-        @UniqueConstraint(columnNames = "email"),
-        @UniqueConstraint(columnNames = "name")
+        @UniqueConstraint(columnNames = "email")
 })
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, unique = true)
-    private long id;
+    private int id;
 
     @Column(name = "username", nullable = false, unique = true, length = 32)
     private String username;
@@ -32,7 +31,7 @@ public class Customer {
     @Column(name = "birthdate")
     private Date birthdate;
 
-    @Column(name = "sex")
+    @Column(name = "sex", length = 50)
     private String sex;
 
     @Column(name = "email", nullable = false, unique = true, length = 254)
@@ -51,7 +50,7 @@ public class Customer {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
