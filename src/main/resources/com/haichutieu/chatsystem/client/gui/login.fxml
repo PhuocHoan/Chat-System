@@ -65,7 +65,7 @@
                   <Insets bottom="30.0" />
                </VBox.margin>
             </HBox>
-            <VBox alignment="CENTER_LEFT" maxWidth="411.0" minWidth="411.0" prefHeight="158.0" prefWidth="411.0">
+            <VBox fx:id="fieldContainer" alignment="CENTER_LEFT" maxWidth="411.0" minWidth="411.0" prefHeight="158.0" prefWidth="411.0">
                <children>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Username" wrappingWidth="98.84296417236328">
                      <VBox.margin>
@@ -86,12 +86,12 @@
                         <Insets />
                      </opaqueInsets>
                      <VBox.margin>
-                        <Insets bottom="30.0" />
+                        <Insets bottom="10.0" />
                      </VBox.margin>
                   </TextField>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Password" wrappingWidth="90.76016235351562">
                      <VBox.margin>
-                        <Insets bottom="10.0" />
+                        <Insets bottom="10.0" top="10.0" />
                      </VBox.margin>
                      <styleClass>
                         <String fx:value="login" />
@@ -104,6 +104,9 @@
                         <String fx:value="password" />
                         <String fx:value="field" />
                      </styleClass>
+                     <VBox.margin>
+                        <Insets bottom="10.0" />
+                     </VBox.margin>
                      
                                                                                                                                                                         </PasswordField>
                   <HBox maxWidth="411.0" minWidth="411.0">

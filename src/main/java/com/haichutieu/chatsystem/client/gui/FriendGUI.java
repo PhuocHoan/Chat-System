@@ -1,8 +1,8 @@
 package com.haichutieu.chatsystem.client.gui;
 
-import com.haichutieu.chatsystem.server.bus.FriendsController;
+import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
-import com.haichutieu.chatsystem.server.dto.Customer;
+import com.haichutieu.chatsystem.dto.Customer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -35,7 +35,7 @@ public class FriendGUI {
 
     private FriendsController friendsController;
 
-//    private Map<Long, GridPane> friendCards = new HashMap<>();
+    //    private Map<Long, GridPane> friendCards = new HashMap<>();
     private ObservableList<Customer> friends;
     private FilteredList<Customer> filteredFriends;
 
@@ -54,7 +54,6 @@ public class FriendGUI {
 //            displayFriends();
 
             filteredFriends = new FilteredList<>(friends, p -> true);
-
 
 
             displayFriends();

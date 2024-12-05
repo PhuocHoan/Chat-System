@@ -17,7 +17,7 @@
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.text.TextFlow?>
 
-<GridPane fx:id="screen" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.ChatGUI">
+<GridPane fx:id="screen" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.ChatGUI">
   <columnConstraints>
     <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="40.0" percentWidth="4.0" prefWidth="40.0" />
     <ColumnConstraints hgrow="SOMETIMES" percentWidth="28.0" />
@@ -85,7 +85,7 @@
             </HBox>
             <HBox>
                <children>
-                  <TextField focusTraversable="false" maxWidth="100000.0" minHeight="35.0" prefHeight="30.0" prefWidth="100000.0" promptText="Searching for someone?" style="-fx-background-radius: 20;">
+                  <TextField fx:id="searchChatList" focusTraversable="false" maxWidth="100000.0" minHeight="35.0" prefHeight="30.0" prefWidth="100000.0" promptText="Searching for someone?" style="-fx-background-radius: 20;">
                      <padding>
                         <Insets left="15.0" />
                      </padding>
@@ -99,7 +99,7 @@
             </HBox>
             <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="354.0" style="-fx-background-color: rgba(255, 255, 255, .0); -fx-background-radius: 0 0 12 12; -fx-background: transparent; -fx-border-width: 0;" vbarPolicy="ALWAYS" VBox.vgrow="ALWAYS">
                <content>
-                  <VBox alignment="TOP_CENTER" prefHeight="61.0" prefWidth="219.0" spacing="10.0" style="-fx-background-color: rgba(255, 255, 255, .0);">
+                  <VBox fx:id="chatList" alignment="TOP_CENTER" prefHeight="61.0" prefWidth="219.0" spacing="10.0" style="-fx-background-color: rgba(255, 255, 255, .0);">
                      <children>
                         <GridPane minHeight="80.0" style="-fx-background-color: rgba(127, 81, 255, .8); -fx-background-radius: 8;">
                            <columnConstraints>
@@ -747,7 +747,7 @@
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                </rowConstraints>
                <children>
-                  <TextField focusTraversable="false" prefHeight="10000.0" prefWidth="100000.0" promptText="Aa" style="-fx-background-radius: 10000;" GridPane.halignment="CENTER" GridPane.valignment="CENTER">
+                  <TextField fx:id="chatField" focusTraversable="false" prefHeight="10000.0" prefWidth="100000.0" promptText="Aa" style="-fx-background-radius: 10000;" GridPane.halignment="CENTER" GridPane.valignment="CENTER">
                      <font>
                         <Font size="14.0" />
                      </font>
@@ -758,7 +758,7 @@
                         <Insets left="15.0" right="15.0" />
                      </padding>
                   </TextField>
-                  <Button focusTraversable="false" mnemonicParsing="false" text="Send" textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+                  <Button fx:id="btn_send_message" focusTraversable="false" mnemonicParsing="false" text="Send" textAlignment="CENTER" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
                </children>
                <padding>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
@@ -766,7 +766,7 @@
             </GridPane>
             <ScrollPane fitToHeight="true" fitToWidth="true" focusTraversable="false" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="297.0" style="-fx-background-color: rgba(255, 255, 255, .7); -fx-background: transparent; -fx-border-width: 0;" vbarPolicy="ALWAYS" GridPane.rowIndex="1">
                <content>
-                  <VBox prefHeight="200.0" prefWidth="100.0" spacing="8.0">
+                  <VBox fx:id="chatArea" prefHeight="200.0" prefWidth="594.0" spacing="8.0">
                      <children>
                         <FlowPane alignment="CENTER_LEFT" maxWidth="-Infinity" nodeOrientation="LEFT_TO_RIGHT" prefHeight="40.0" prefWidth="382.0" VBox.vgrow="NEVER">
                            <children>

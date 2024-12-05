@@ -1,16 +1,40 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE hibernate-configuration PUBLIC
         "-//Hibernate/Hibernate Configuration DTD 5.3//EN"
         "http://hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 
 <hibernate-configuration>
     <session-factory>
-        <property name="connection.url">
+        <!-- Database connection settings -->
+        <property name="hibernate.connection.provider_class">
+            org.hibernate.hikaricp.internal.HikariCPConnectionProvider
+        </property>
+        <property name="hibernate.hikari.dataSourceClassName">
+            org.postgresql.ds.PGSimpleDataSource
+        </property>
+        <property name="hibernate.hikari.dataSource.url">
             jdbc:postgresql://db-chatsystem-chat-system-java.e.aivencloud.com:15443/defaultdb?ssl=require
         </property>
-        <property name="connection.username">avnadmin</property>
-        <property name="connection.password">AVNS_5GxNDrgTvuVB3-hSeac</property>
-        <mapping class="com.haichutieu.chatsystem.server.dto.Customer"/>
-        <mapping class="com.haichutieu.chatsystem.server.dto.FriendList"/>
+        <property name="hibernate.hikari.dataSource.user">avnadmin</property>
+        <property name="hibernate.hikari.dataSource.password">AVNS_5GxNDrgTvuVB3-hSeac</property>
+        <property name="hibernate.transaction.coordinator_class">jdbc</property>
+
+        <!-- HikariCP-specific settings -->
+        <property name="hibernate.hikari.maximumPoolSize">10</property>
+        <property name="hibernate.hikari.minimumIdle">2</property>
+        <property name="hibernate.hikari.idleTimeout">300000</property>
+        <property name="hibernate.hikari.maxLifetime">1800000</property>
+        <property name="hibernate.hikari.connectionTimeout">30000</property>
+        <property name="hibernate.hikari.poolName">ChatSystemPool</property>
+
+        <!-- Hibernate mappings -->
+        <mapping class="com.haichutieu.chatsystem.dto.Customer"/>
+        <mapping class="com.haichutieu.chatsystem.dto.FriendList"/>
+        <mapping class="com.haichutieu.chatsystem.dto.BlockList"/>
+        <mapping class="com.haichutieu.chatsystem.dto.Conversation"/>
+        <mapping class="com.haichutieu.chatsystem.dto.ConversationMember"/>
+        <mapping class="com.haichutieu.chatsystem.dto.LoginTime"/>
+        <mapping class="com.haichutieu.chatsystem.dto.Message"/>
+        <mapping class="com.haichutieu.chatsystem.dto.SpamList"/>
     </session-factory>
 </hibernate-configuration>
