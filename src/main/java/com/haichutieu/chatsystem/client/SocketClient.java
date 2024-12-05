@@ -111,7 +111,7 @@ public class SocketClient {
     }
 
     private void handleUnfriend(String message) {
-//        FriendsController.handleUnfriend(message);
+        FriendsController.handleUnfriend(message);
     }
 
     private static class SocketClientHelper {

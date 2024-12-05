@@ -87,6 +87,7 @@ public class SocketServer {
             case "LOGIN" -> handleLogin(content, clientChannel);
 //            case "ADD_FRIEND" -> handleAddFriend(parts);
             case "GET_FRIEND_LIST" -> handleGetFriendList(content);
+            case "UNFRIEND" -> handleUnfriend(content);
 //            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
 //                    handleMessage(parts);
 //            case "CREATE_GROUP" -> handleCreateGroup(parts);
@@ -224,6 +225,16 @@ public class SocketServer {
         }
 
         return message;
+    }
+
+    private String handleUnfriend(String message) {
+        String[] parts = message.split(" ");
+        long userID = Integer.parseInt(parts[0]);
+        long friendID = Integer.parseInt(parts[1]);
+        if (!FriendsService.removeFriend(userID, friendID)) {
+            return "UNFRIEND ERROR " + friendID;
+        }
+        return "UNFRIEND OK " + friendID;
     }
 //    private String handleCreateGroup(String[] parts) {
 //        if (parts.length < 3) {

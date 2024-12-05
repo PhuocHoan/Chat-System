@@ -30,11 +30,14 @@ public class FriendsController {
             FriendGUI.getInstance().onReceiveFriendList(friends, onlineFriendIds);
     }
 
-//    public static void handleUnfriend(String message) {
-//        if (message.startsWith("ERROR")) {
-//            FriendGUI.getInstance().onUnfriendError();
-//        } else {
-//            FriendGUI.getInstance().onUnfriendSuccess();
-//        }
-//    }
+    public static void handleUnfriend(String message) {
+        String[] parts = message.split(" ");
+        String status = parts[0];
+        int friendId = Integer.parseInt(parts[1]);
+        if (parts[0].equals("ERROR")) {
+            FriendGUI.getInstance().onUnfriendError(friendId);
+        } else {
+            FriendGUI.getInstance().onUnfriendSuccess(friendId);
+        }
+    }
 }

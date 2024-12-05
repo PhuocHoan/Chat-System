@@ -8,7 +8,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -21,7 +20,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import org.w3c.dom.events.MouseEvent;
 
 
 import java.util.List;
@@ -124,6 +122,28 @@ public class FriendGUI {
             onlineFriendIDs.add(userID);
             displayFriends();
         }
+    }
+
+    public void onUnfriendError(int friendID) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to unfriend user" + friendID);
+            alert.showAndWait();
+        });
+    }
+
+    public void onUnfriendSuccess(int friendId) {
+        Platform.runLater(() -> {
+            // show success message including friend's name
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText("You have successfully unfriended " + friends.stream().filter(f -> f.getId() == friendId).findFirst().orElse(new Customer()).getName());
+            alert.showAndWait();
+
+            friends.removeIf(f -> f.getId() == friendId);
+            displayFriends();
+        });
     }
 
     private void updateFriendSearchAndFilter() {
@@ -232,9 +252,8 @@ public class FriendGUI {
             return;
         }
 
-        friends.remove(friend);
-        friendContainer.getChildren().remove(friendCard);
-        //friendsController.blockFriend(friend);
+        // UNFRIEND <userId> <friendId>
+        SocketClient.getInstance().sendMessages("BLOCK " + SessionManager.getInstance().getCurrentUser().getId() + " " + friend.getId());
     }
 
 
@@ -247,9 +266,8 @@ public class FriendGUI {
             return;
         }
 
-        friends.remove(friend);
-        friendContainer.getChildren().remove(friendCard);
-        //friendsController.removeFriend(friend);
+        // UNFRIEND <userId> <friendId>
+        SocketClient.getInstance().sendMessages("UNFRIEND " + SessionManager.getInstance().getCurrentUser().getId() + " " + friend.getId());
     }
 
     private void createNewGroup(Customer friend) {
@@ -296,4 +314,7 @@ public class FriendGUI {
 
         // Switch the scene to the chat tab
     }
+
+
+
 }

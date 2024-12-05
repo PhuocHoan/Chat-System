@@ -5,7 +5,6 @@ import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import org.hibernate.Session;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class FriendsService {
 
@@ -28,7 +27,7 @@ public class FriendsService {
         }
     }
 
-    public static void removeFriend(long userID, long friendID) {
+    public static boolean removeFriend(long userID, long friendID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             session.beginTransaction();
             session.createQuery("""
@@ -40,6 +39,7 @@ public class FriendsService {
                     .setParameter("friendID", friendID)
                     .executeUpdate();
             session.getTransaction().commit();
+            return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to remove friend", e);
         }
