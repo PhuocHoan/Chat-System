@@ -48,13 +48,13 @@ public class ChatGUI {
             }
         });
 
-        friendsBtn.setOnMouseClicked(event -> {
-            try {
-                switchToFriendsTab(event);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+//        friendsBtn.setOnMouseClicked(event -> {
+//            try {
+//                switchToFriendsTab(event);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
     }
 
     void sendMessage() {
@@ -75,8 +75,8 @@ public class ChatGUI {
     }
 
     @FXML
-    public void switchToFriendsTab(MouseEvent event) throws IOException {
-        SceneController.addScene("friends", "gui/client/friends.fxml", "stylesheets/style.css");
+    public void switchToFriendsTab() throws IOException {
+        SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
         SceneController.setScene("friends");
     }
 

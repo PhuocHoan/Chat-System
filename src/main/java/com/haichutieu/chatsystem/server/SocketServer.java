@@ -3,8 +3,10 @@ package com.haichutieu.chatsystem.server;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
+import com.haichutieu.chatsystem.server.dal.FriendsService;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
+import javafx.application.Platform;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.nio.channels.*;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SocketServer {
     final String HOST = "localhost";
@@ -83,6 +86,7 @@ public class SocketServer {
             case "REGISTER" -> handleRegister(content, clientChannel);
             case "LOGIN" -> handleLogin(content, clientChannel);
 //            case "ADD_FRIEND" -> handleAddFriend(parts);
+            case "GET_FRIEND_LIST" -> handleGetFriendList(content);
 //            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
 //                    handleMessage(parts);
 //            case "CREATE_GROUP" -> handleCreateGroup(parts);
@@ -135,6 +139,7 @@ public class SocketServer {
         }
         List<String> fields = Util.deserializeObject(parts[1], List.class);
         Customer customer = CustomerService.getCustomerByUsername(fields.get(0));
+
         if (customer == null || !BCrypt.checkpw(fields.get(1), customer.getPassword())) {
             return "LOGIN ERROR The username or password you entered is incorrect.";
         }
@@ -199,7 +204,27 @@ public class SocketServer {
 //            return "ERROR User is not online\n";
 //        }
 //    }
+    private String handleGetFriendList(String userID) {
+        long id = Long.parseLong(userID);
+        List<Customer> friends = null;
+        friends = FriendsService.fetchFriends(id);
 
+        if (friends == null) {
+            return "GET_FRIEND_LIST ERROR Failed to fetch friends\n";
+        }
+
+        List<Integer> onlineUsers = new ArrayList<>();
+        for (var entry : this.onlineUsers.entrySet()) {
+            onlineUsers.add(entry.getKey());
+        }
+
+        String message = "GET_FRIEND_LIST " + Util.serializeObject(friends) + " END";
+        if (!onlineUsers.isEmpty()) {
+            message += " ONLINE " + Util.serializeObject(onlineUsers) + " END";
+        }
+
+        return message;
+    }
 //    private String handleCreateGroup(String[] parts) {
 //        if (parts.length < 3) {
 //            return "ERROR Invalid CREATE_GROUP command\n";

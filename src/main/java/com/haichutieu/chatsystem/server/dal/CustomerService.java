@@ -6,6 +6,8 @@ import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import java.util.concurrent.CompletableFuture;
+
 public class CustomerService {
     public static void addCustomer(Customer customer) {
         Transaction transaction = null;
