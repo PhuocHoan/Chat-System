@@ -1,16 +1,17 @@
 package com.haichutieu.chatsystem.client.gui;
 
-import com.haichutieu.chatsystem.server.bus.AuthController;
+import com.haichutieu.chatsystem.client.bus.AuthController;
 import com.haichutieu.chatsystem.client.util.SceneController;
-import javafx.event.EventHandler;
+import com.haichutieu.chatsystem.client.util.SessionManager;
+import com.haichutieu.chatsystem.dto.Customer;
+import com.haichutieu.chatsystem.util.Util;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
-import javafx.stage.Screen;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.function.UnaryOperator;
 
 public class SignupGUI {
 
+    private static SignupGUI instance;
     @FXML
     private Label alreadyAccount;
 
@@ -51,28 +53,28 @@ public class SignupGUI {
     @FXML
     private Text alertText;
 
+    public SignupGUI() {
+        instance = this;
+    }
+
+    public static SignupGUI getInstance() {
+        return instance;
+    }
+
     @FXML
     public void initialize() {
-        // Set the screen size to the size of the monitor
-        screen.setPrefWidth(Screen.getPrimary().getVisualBounds().getWidth());
-        screen.setPrefHeight(Screen.getPrimary().getVisualBounds().getHeight());
-
         // Make the screen (container) focusable
         screen.setFocusTraversable(true);
         alert.setVisible(false);
         // Handle the enter key event
-        EventHandler<KeyEvent> eventHandler = event -> {
+        screen.setOnKeyReleased(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 handleRegister();
             }
-        };
-        screen.addEventHandler(KeyEvent.KEY_RELEASED, eventHandler);
-        button.addEventHandler(KeyEvent.KEY_RELEASED, eventHandler);
+        });
 
         // When the screen is clicked, it gains focus, causing any TextField to lose focus
-        screen.setOnMouseClicked(event -> {
-            screen.requestFocus();
-        });
+        screen.setOnMouseClicked(event -> screen.requestFocus());
 
         // limit text length in textField. Max length: 32
         UnaryOperator<TextFormatter.Change> limitLength = c -> {
@@ -163,19 +165,30 @@ public class SignupGUI {
     }
 
     void handleRegister() {
-        List<TextField> data = List.of(name, username, email, password, confirmPassword);
-        // Check for empty fields or fields with errors
-        if (data.stream().anyMatch(field -> field.getText().isEmpty() || field.getStyleClass().contains("error"))) {
-            alert.setVisible(true);
+        List<String> fields = List.of(name.getText(), username.getText(), email.getText(), password.getText());
+        if (name.getStyleClass().contains("error") || username.getStyleClass().contains("error") || email.getStyleClass().contains("error") || password.getStyleClass().contains("error") || confirmPassword.getStyleClass().contains("error")) {
+            AuthController.handleRegister(fields, "error");
         } else {
-            String res = AuthController.handleRegister(data);
-            if (res != null) {
-                alert.setVisible(true);
-                alertText.setText(res);
+            AuthController.handleRegister(fields, null);
+        }
+    }
+
+    public void displayError(String message) {
+        alertText.setText(message);
+        alert.setVisible(true);
+    }
+
+    public void registerResult(String message) {
+        Platform.runLater(() -> {
+            if (message.startsWith("ERROR")) {
+                displayError(message.replaceFirst("ERROR", ""));
             } else {
-                // switch to chat screen
+                String[] parts = message.split(" END ", 2);
+                Customer customer = Util.deserializeObject(parts[0], Customer.class);
+                SessionManager.getInstance().setCurrentUser(customer);
+                System.out.println(parts[1]);
                 SceneController.setScene("chat");
             }
-        }
+        });
     }
 }

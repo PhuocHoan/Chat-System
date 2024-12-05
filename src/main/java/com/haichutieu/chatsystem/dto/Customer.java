@@ -18,35 +18,29 @@ public class Customer {
 
     @Column(name = "username", nullable = false, unique = true, length = 32)
     private String username;
-
-    @Column(name = "password", nullable = false, length = 32)
+    @Column(name = "password", nullable = false, length = 60)
     private String password;
-
     @Column(name = "name", nullable = false, length = 100)
     private String name;
-
     @Column(name = "address", length = 100)
     private String address;
-
     @Column(name = "birthdate")
     private Date birthdate;
-
     @Column(name = "sex", length = 50)
     private String sex;
-
     @Column(name = "email", nullable = false, unique = true, length = 254)
     private String email;
-
     @Column(name = "create_date", nullable = false)
-    private Timestamp create_date;
-
+    private Timestamp createDate;
     @Column(name = "is_lock", nullable = false)
-    private boolean is_lock;
+    private boolean isLock;
+    @Column(name = "is_admin", nullable = false)
+    private boolean isAdmin;
 
     public Customer() {
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
@@ -110,20 +104,28 @@ public class Customer {
         this.email = email;
     }
 
-    public Timestamp getCreate_date() {
-        return create_date;
+    public Timestamp getCreateDate() {
+        return createDate;
     }
 
-    public void setCreate_date(Timestamp create_date) {
-        this.create_date = create_date;
+    public void setCreateDate(Timestamp createDate) {
+        this.createDate = createDate;
     }
 
-    public boolean isIs_lock() {
-        return is_lock;
+    public boolean isIsLock() {
+        return isLock;
     }
 
-    public void setIs_lock(boolean is_lock) {
-        this.is_lock = is_lock;
+    public void setIsLock(boolean isLock) {
+        this.isLock = isLock;
+    }
+
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     @Override
@@ -137,8 +139,9 @@ public class Customer {
                 ", birthdate=" + birthdate +
                 ", sex='" + sex + '\'' +
                 ", email='" + email + '\'' +
-                ", create_date=" + create_date +
-                ", is_lock=" + is_lock +
+                ", create_date=" + createDate +
+                ", is_lock=" + isLock +
+                ", is_admin=" + isAdmin +
                 '}';
     }
 }

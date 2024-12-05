@@ -1,69 +1,99 @@
 package com.haichutieu.chatsystem.client;
 
-import java.io.BufferedReader;
+import com.haichutieu.chatsystem.client.gui.LoginGUI;
+import com.haichutieu.chatsystem.client.gui.SignupGUI;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class SocketClient {
-    private AsynchronousSocketChannel client;
-    private Future<Void> future;
     private static SocketClient instance;
+    private final AsynchronousSocketChannel clientChannel;
 
     private SocketClient() {
         try {
-            client = AsynchronousSocketChannel.open();
-            InetSocketAddress hostAddress = new InetSocketAddress("localhost", 8080);
-            future = client.connect(hostAddress);
-            start();
+            clientChannel = AsynchronousSocketChannel.open();
+            clientChannel.connect(new InetSocketAddress("localhost", 8080)).get();
+            System.out.println("Connected to the server.");
+            System.out.println(clientChannel);
+            // Start a thread to read messages from the server
+            Thread.startVirtualThread(this::readMessages);
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public static SocketClient getInstance() {
-        if (instance == null)
-            instance = new SocketClient();
-        return instance;
+        return SocketClient.SocketClientHelper.INSTANCE;
     }
 
-    private void start() {
+    public AsynchronousSocketChannel getClientChannel() {
+        return clientChannel;
+    }
+
+    public void sendMessages(String message) {
         try {
-            future.get();
+            ByteBuffer buffer = ByteBuffer.wrap((message).getBytes());
+            clientChannel.write(buffer).get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
     }
 
-    public String sendMessage(String message) throws ExecutionException, InterruptedException {
-        byte[] byteMsg = message.getBytes();
-        ByteBuffer buffer = ByteBuffer.wrap(byteMsg);
-        Future<Integer> writeResult = client.write(buffer);
-
-        // do some computation
-
-        writeResult.get();
-        buffer.flip();
-        Future<Integer> readResult = client.read(buffer);
-
-        // do some computation
-
-        readResult.get();
-        String echo = new String(buffer.array()).trim();
-        System.out.println(echo);
-        buffer.clear();
-        return echo;
-    }
-
-    public void stop() {
+    private void readMessages() {
+        ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
         try {
-            client.close();
-        } catch (IOException e) {
+            while (clientChannel.isOpen()) {
+                Integer bytesRead = clientChannel.read(buffer).get();
+                if (bytesRead == -1) {
+                    System.out.println("Server closed the connection.");
+                    break;
+                }
+                buffer.flip();
+                byte[] bytes = new byte[buffer.limit()];
+                buffer.get(bytes);
+                String message = new String(bytes);
+                handleMessage(message);
+                buffer.clear();
+            }
+        } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
+    }
+
+    private void handleMessage(String messages) {
+        String[] parts = messages.split(" ", 2);
+        String command = parts[0];
+        switch (command) {
+            case "REGISTER":
+                handleRegister(parts[1]);
+                break;
+            case "LOGIN":
+                handleLogin(parts[1]);
+                break;
+            case "OFFLINE":
+                handleOffline(parts[1]);
+                break;
+        }
+    }
+
+    private void handleRegister(String message) {
+        SignupGUI.getInstance().registerResult(message);
+    }
+
+    private void handleLogin(String message) {
+        LoginGUI.getInstance().loginResult(message);
+    }
+
+    private void handleOffline(String message) {
+        System.out.println(message);
+    }
+
+    private static class SocketClientHelper {
+        private static final SocketClient INSTANCE = new SocketClient();
     }
 }

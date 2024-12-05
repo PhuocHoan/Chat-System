@@ -25,8 +25,8 @@ tasks.withType(JavaCompile) {
 }
 
 application {
-    mainModule = 'com.haichutieu.chatsystem'
-    mainClass = 'com.haichutieu.chatsystem.App'
+    mainModule = 'com.haichutieu.chatsystem.client'
+    mainClass = 'com.haichutieu.chatsystem.client.ClientApp'
 }
 
 javafx {
@@ -37,13 +37,22 @@ javafx {
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+
+    // Hibernate
     implementation enforcedPlatform("org.hibernate.orm:hibernate-platform:6.6.3.Final")
-    // use the versions from the platform
     implementation "org.hibernate.orm:hibernate-core"
     implementation "jakarta.transaction:jakarta.transaction-api"
-    implementation 'org.postgresql:postgresql:42.7.4'
 
-    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'org.postgresql:postgresql:42.7.4' // postgresql driver
+
+    implementation 'org.mindrot:jbcrypt:0.4' // hash password by bcrypt
+    implementation 'org.hibernate.orm:hibernate-hikaricp:6.6.3.Final' // hibernate connection pool by HikariCP
+
+    // create log
+    implementation 'org.slf4j:slf4j-api:2.0.16'
+    implementation 'org.slf4j:slf4j-simple:2.0.16'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2' // json mapper
 }
 
 test {

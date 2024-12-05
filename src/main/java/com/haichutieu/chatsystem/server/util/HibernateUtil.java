@@ -4,9 +4,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 public class HibernateUtil {
-    private static final SessionFactory sessionFactory;
+    private final SessionFactory sessionFactory;
 
-    static {
+    private HibernateUtil() {
         try {
             sessionFactory = new Configuration().configure(HibernateUtil.class.getResource("../../hibernate.cfg.xml")).buildSessionFactory();
         } catch (Throwable ex) {
@@ -15,7 +15,15 @@ public class HibernateUtil {
         }
     }
 
-    public static SessionFactory getSessionFactory() {
+    public static HibernateUtil getInstance() {
+        return HibernateUtil.SessionManagerHelper.INSTANCE;
+    }
+
+    public SessionFactory getSessionFactory() {
         return sessionFactory;
+    }
+
+    private static class SessionManagerHelper {
+        private static final HibernateUtil INSTANCE = new HibernateUtil();
     }
 }

@@ -5,6 +5,8 @@ module system.chatsystem {
     requires jakarta.persistence;
     requires java.naming;
     requires jdk.httpserver;
+    requires jbcrypt;
+    requires com.fasterxml.jackson.databind;
 
 
     exports com.haichutieu.chatsystem.client.gui;
