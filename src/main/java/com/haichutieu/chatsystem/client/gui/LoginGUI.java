@@ -1,5 +1,6 @@
 package com.haichutieu.chatsystem.client.gui;
 
+import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.bus.AuthController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
@@ -159,6 +160,9 @@ public class LoginGUI {
                     SceneController.addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
                 } catch (IOException e) {
                     throw new RuntimeException(e);
+                }
+                if (customer.getId() != SessionManager.getInstance().getCurrentUser().getId()) {
+                    FriendGUI.getInstance().onUserOnline(customer.getId());
                 }
                 SceneController.setScene("chat");
             }

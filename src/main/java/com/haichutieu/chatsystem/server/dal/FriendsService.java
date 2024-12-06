@@ -11,8 +11,7 @@ public class FriendsService {
     public FriendsService() {
     }
 
-    public List<Customer> fetchFriends(int userID) {
-        // SessionManager.getInstance().getCurrentUser().getId()
+    public static List<Customer> fetchFriends(long userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                                 select distinct c
@@ -25,6 +24,24 @@ public class FriendsService {
                     .getResultList();
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch friends", e);
+        }
+    }
+
+    public static boolean removeFriend(long userID, long friendID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            session.beginTransaction();
+            session.createQuery("""
+                                delete from FriendList f
+                                     where (f.customerID = :id and f.friendID = :friendID)
+                                        or (f.friendID = :id and f.customerID = :friendID)
+                            """)
+                    .setParameter("id", userID)
+                    .setParameter("friendID", friendID)
+                    .executeUpdate();
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to remove friend", e);
         }
     }
 }

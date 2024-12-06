@@ -133,7 +133,7 @@ public class ChatGUI {
 
     @FXML
     public void switchToFriendsTab(MouseEvent event) throws IOException {
-        SceneController.addScene("friends", "gui/client/friends.fxml", "stylesheets/style.css");
+        SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
         SceneController.setScene("friends");
     }
 

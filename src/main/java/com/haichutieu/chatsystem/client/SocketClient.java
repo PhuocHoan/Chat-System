@@ -1,7 +1,10 @@
 package com.haichutieu.chatsystem.client;
 
-import com.haichutieu.chatsystem.client.gui.ChatGUI;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.haichutieu.chatsystem.client.bus.FriendsController;
+import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.LoginGUI;
+import com.haichutieu.chatsystem.client.gui.ChatGUI;
 import com.haichutieu.chatsystem.client.gui.SignupGUI;
 
 import java.io.IOException;
@@ -85,6 +88,12 @@ public class SocketClient {
             case "OFFLINE":
                 handleOffline(parts[1]);
                 break;
+            case "GET_FRIEND_LIST":
+                handleGetFriendList(parts[1]);
+                break;
+            case "UNFRIEND":
+                handleUnfriend(parts[1]);
+                break;
         }
     }
 
@@ -105,7 +114,19 @@ public class SocketClient {
     }
 
     private void handleOffline(String message) {
-        System.out.println(message);
+        FriendGUI.getInstance().onUserOffline(Integer.parseInt(message.split(" ")[1]));
+    }
+
+    private void handleGetFriendList(String message) {
+        try {
+            FriendsController.fetchFriendList(message);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleUnfriend(String message) {
+        FriendsController.handleUnfriend(message);
     }
 
     private static class SocketClientHelper {
