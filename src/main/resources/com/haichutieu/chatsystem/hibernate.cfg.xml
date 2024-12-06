@@ -36,5 +36,6 @@
         <mapping class="com.haichutieu.chatsystem.dto.LoginTime"/>
         <mapping class="com.haichutieu.chatsystem.dto.Message"/>
         <mapping class="com.haichutieu.chatsystem.dto.SpamList"/>
+        <mapping class="com.haichutieu.chatsystem.dto.MessageDisplay"/>
     </session-factory>
 </hibernate-configuration>

@@ -1,5 +1,6 @@
 package com.haichutieu.chatsystem.client;
 
+import com.haichutieu.chatsystem.client.gui.ChatGUI;
 import com.haichutieu.chatsystem.client.gui.LoginGUI;
 import com.haichutieu.chatsystem.client.gui.SignupGUI;
 
@@ -45,7 +46,7 @@ public class SocketClient {
     }
 
     private void readMessages() {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(1048576); // allocate 1MB
         try {
             while (clientChannel.isOpen()) {
                 Integer bytesRead = clientChannel.read(buffer).get();
@@ -57,7 +58,7 @@ public class SocketClient {
                 byte[] bytes = new byte[buffer.limit()];
                 buffer.get(bytes);
                 String message = new String(bytes);
-                handleMessage(message);
+                handleMessageFromServer(message);
                 buffer.clear();
             }
         } catch (InterruptedException | ExecutionException e) {
@@ -65,7 +66,7 @@ public class SocketClient {
         }
     }
 
-    private void handleMessage(String messages) {
+    private void handleMessageFromServer(String messages) {
         String[] parts = messages.split(" ", 2);
         String command = parts[0];
         switch (command) {
@@ -74,6 +75,12 @@ public class SocketClient {
                 break;
             case "LOGIN":
                 handleLogin(parts[1]);
+                break;
+            case "CHAT_LIST":
+                handleChatList(parts[1]);
+                break;
+            case "MESSAGE":
+                handleMessage(parts[1]);
                 break;
             case "OFFLINE":
                 handleOffline(parts[1]);
@@ -87,6 +94,14 @@ public class SocketClient {
 
     private void handleLogin(String message) {
         LoginGUI.getInstance().loginResult(message);
+    }
+
+    private void handleChatList(String message) {
+        ChatGUI.getInstance().chatListResult(message);
+    }
+
+    private void handleMessage(String message) {
+        ChatGUI.getInstance();
     }
 
     private void handleOffline(String message) {

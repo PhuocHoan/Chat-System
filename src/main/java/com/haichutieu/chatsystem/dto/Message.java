@@ -9,14 +9,15 @@ import java.util.Objects;
 @Table(name = "message")
 public class Message {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
     @Column(name = "conversation_id", nullable = false)
     private long conversationID;
 
-    @Id
     @Column(name = "customer_id", nullable = false)
     private int customerID;
 
-    @Id
     @Column(name = "time", nullable = false)
     private Timestamp time;
 
@@ -24,6 +25,14 @@ public class Message {
     private String message;
 
     public Message() {
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public long getConversationID() {
@@ -74,6 +83,7 @@ public class Message {
     @Override
     public String toString() {
         return "Message{" +
+                "id=" + id +
                 "conversationID=" + conversationID +
                 ", customerID=" + customerID +
                 ", time=" + time +

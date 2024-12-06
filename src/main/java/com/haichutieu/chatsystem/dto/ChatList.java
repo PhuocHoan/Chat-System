@@ -8,13 +8,18 @@ public class ChatList {
     public String senderName;
     public String latestMessage;
     public Timestamp latestTime;
+    public boolean isGroup;
 
-    ChatList(long conversationId, String conversationName, String senderName, String latestMessage, Timestamp latestTime) {
+    public ChatList() {
+    }
+    
+    ChatList(long conversationId, String conversationName, String senderName, String latestMessage, Timestamp latestTime, boolean isGroup) {
         this.conversationId = conversationId;
         this.conversationName = conversationName;
         this.senderName = senderName;
         this.latestMessage = latestMessage;
         this.latestTime = latestTime;
+        this.isGroup = isGroup;
     }
 
     @Override
@@ -25,6 +30,7 @@ public class ChatList {
                 ", senderName='" + senderName + '\'' +
                 ", latestMessage='" + latestMessage + '\'' +
                 ", latestTime=" + latestTime +
+                ", isGroup=" + isGroup +
                 '}';
     }
 }

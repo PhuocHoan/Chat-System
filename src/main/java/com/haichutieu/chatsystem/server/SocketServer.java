@@ -1,8 +1,10 @@
 package com.haichutieu.chatsystem.server;
 
+import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
+import com.haichutieu.chatsystem.server.dal.MessageService;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
 import org.mindrot.jbcrypt.BCrypt;
@@ -51,7 +53,7 @@ public class SocketServer {
     }
 
     public static SocketServer getInstance() {
-        return SocketServer.SocketServerHelper.INSTANCE;
+        return SocketServerHelper.INSTANCE;
     }
 
     private void handleClient(AsynchronousSocketChannel clientChannel) {
@@ -82,14 +84,14 @@ public class SocketServer {
         return switch (command) {
             case "REGISTER" -> handleRegister(content, clientChannel);
             case "LOGIN" -> handleLogin(content, clientChannel);
+            case "CHAT_LIST" -> handleChatList(content);
 //            case "ADD_FRIEND" -> handleAddFriend(parts);
 //            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
 //                    handleMessage(parts);
 //            case "CREATE_GROUP" -> handleCreateGroup(parts);
 //            case "GROUP_MESSAGE" -> handleGroupMessage(parts);
-            case "OFFLINE" -> // user exits the app or logs out
-                    handleOffline(content, clientChannel);
-            default -> "ERROR Unknown command";
+            case "OFFLINE" -> handleOffline(content, clientChannel); // user exit or logout
+            default -> throw new IllegalStateException("Unexpected value: " + command);
         };
     }
 
@@ -154,6 +156,11 @@ public class SocketServer {
         return "LOGIN " + customerContent + " END User " + customer.getUsername() + " is online now"; // END is defined as the end of the data sending
     }
 
+    private String handleChatList(String id) {
+        List<ChatList> chatList = MessageService.getChatList(Integer.parseInt(id));
+        return "CHAT_LIST " + Util.serializeObject(chatList);
+    }
+
     private String handleOffline(String username, AsynchronousSocketChannel clientChannel) {
         try {
             clientChannel.close();
@@ -169,6 +176,7 @@ public class SocketServer {
         CustomerService.updateLogoutCustomer(id, Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
         return "OFFLINE User " + parts[0] + " is offline now";
     }
+
 //    private String handleAddFriend(String[] parts) {
 //        if (parts.length < 3) {
 //            return "ERROR Invalid ADD_FRIEND command\n";

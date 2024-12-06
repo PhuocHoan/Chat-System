@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -187,6 +188,11 @@ public class SignupGUI {
                 Customer customer = Util.deserializeObject(parts[0], Customer.class);
                 SessionManager.getInstance().setCurrentUser(customer);
                 System.out.println(parts[1]);
+                try {
+                    SceneController.addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 SceneController.setScene("chat");
             }
         });
