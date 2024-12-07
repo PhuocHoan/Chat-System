@@ -23,6 +23,15 @@ public class CustomerService {
         }
     }
 
+    public static Customer getCustomerByID(int userID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("select C from Customer C where C.id = :id", Customer.class).setParameter("id", userID).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static Customer getCustomerByUsername(String username) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("select C from Customer C where C.username = :username", Customer.class).setParameter("username", username).uniqueResult();

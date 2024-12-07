@@ -91,3 +91,9 @@ Label.right {
 .error.field {
     -fx-border-color: red;
 }
+
+.vboxFrame {
+    -fx-border-radius: 8px;
+    -fx-border-color: #ffffff;
+    -fx-border-width: 2px;
+}

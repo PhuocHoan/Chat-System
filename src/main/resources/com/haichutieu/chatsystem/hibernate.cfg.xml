@@ -20,7 +20,7 @@
         <property name="hibernate.transaction.coordinator_class">jdbc</property>
 
         <!-- HikariCP-specific settings -->
-        <property name="hibernate.hikari.maximumPoolSize">10</property>
+        <property name="hibernate.hikari.maximumPoolSize">20</property>
         <property name="hibernate.hikari.minimumIdle">2</property>
         <property name="hibernate.hikari.idleTimeout">300000</property>
         <property name="hibernate.hikari.maxLifetime">1800000</property>

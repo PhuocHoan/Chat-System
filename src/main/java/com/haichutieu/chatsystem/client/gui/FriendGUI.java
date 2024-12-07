@@ -41,15 +41,18 @@ public class FriendGUI {
 
     @FXML
     private GridPane screen;
-
     @FXML
     private VBox friendContainer;
-
+    @FXML
+    private VBox userListContainer;
     @FXML
     private TextField friendSearchField;
-
     @FXML
     private ChoiceBox<String> statusFilter;
+    @FXML
+    private TextField userSearchField;
+    @FXML
+    private Button userSearchButton;
 
     private final ProgressIndicator friendListLoading = new ProgressIndicator();
 
@@ -85,8 +88,10 @@ public class FriendGUI {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                if (friends == null) {
+                if (friendList.isEmpty()) {
                     friendContainer.getChildren().remove(friendListLoading);
+                    friendContainer.getChildren().add(new Label("You have no friends yet."));
+                    return;
                 }
 
                 friends = FXCollections.observableArrayList(friendList);
@@ -122,6 +127,28 @@ public class FriendGUI {
             onlineFriendIDs.add(userID);
             displayFriends();
         }
+    }
+
+    public void onSendFriendRequest(boolean success) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Friend Request");
+            alert.setHeaderText(success ? "Friend request sent!" : "Failed to send friend request. Please try again!");
+            alert.showAndWait();
+        });
+    }
+
+    // Called when your friend request if accepted from a user
+    public void onAcceptInvitation(Customer friend) {
+        Platform.runLater(() -> {
+            friends.addFirst(friend);
+            displayFriends();
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Friend Request");
+            alert.setHeaderText(friend.getName() + " accepted your friend request!");
+            alert.showAndWait();
+        });
     }
 
     public void onUnfriendError(int friendID) {
@@ -214,7 +241,8 @@ public class FriendGUI {
 
         Text statusText = new Text(isOnline ? "Online" : "Offline");
         statusText.setFont(Font.font(null, FontWeight.BOLD, 14));
-        statusText.setStyle((isOnline ? "-fx-text-fill: #99FF66;" : "-fx-text-fill: #DDDDDD;"));
+        String color = isOnline ? "#99FF66" : "#DDDDDD";
+        statusText.setStyle("-fx-fill: " + color + ";");
 
         status.getChildren().add(statusLabel);
         status.getChildren().add(statusText);
@@ -233,8 +261,10 @@ public class FriendGUI {
         m3.setOnAction(e -> unfriendFriend(friend, friendCard));
         MenuItem m4 = new MenuItem("Block");
         m4.setOnAction(e -> blockFriend(friend, friendCard));
+        MenuItem m5 = new MenuItem("Report Spam");
+        m5.setOnAction(e -> reportSpam(friend));
 
-        actions.getItems().addAll(m1, m2, m3, m4);
+        actions.getItems().addAll(m1, m2, m3, m4, m5);
 
         friendCard.add(actions, 1, 0, 1, 2);
         GridPane.setValignment(actions, CENTER);
@@ -252,8 +282,21 @@ public class FriendGUI {
             return;
         }
 
-        // UNFRIEND <userId> <friendId>
+        // BLOCK <userId> <friendId>
         SocketClient.getInstance().sendMessages("BLOCK " + SessionManager.getInstance().getCurrentUser().getId() + " " + friend.getId());
+    }
+
+    private void reportSpam(Customer user) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Confirm");
+        confirmation.setHeaderText("Are you sure you want to report " + user.getName() + " for spam?");
+        confirmation.showAndWait();
+        if (confirmation.getResult() != ButtonType.OK) {
+            return;
+        }
+
+        // SPAM <userId> <friendId>
+        SocketClient.getInstance().sendMessages("SPAM " + SessionManager.getInstance().getCurrentUser().getId() + " " + user.getId());
     }
 
 
@@ -316,5 +359,130 @@ public class FriendGUI {
     }
 
 
+    public void onBlockError(int friendId) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to block user " + friends.stream().filter(f -> f.getId() == friendId).findFirst().orElse(new Customer()).getName());
+            alert.showAndWait();
+        });
+    }
 
+    public void onBlockSuccess(int friendId) {
+        Platform.runLater(() -> {
+            // show success message including friend's name
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText("You have successfully blocked " + friends.stream().filter(f -> f.getId() == friendId).findFirst().orElse(new Customer()).getName());
+            alert.showAndWait();
+
+            friends.removeIf(f -> f.getId() == friendId);
+            onlineFriendIDs.remove(friendId);
+            displayFriends();
+        });
+    }
+
+    public void onSpamResponse(boolean b) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Spam Report");
+            alert.setHeaderText(b ? "User has been reported for spam." : "Failed to report user for spam.");
+            alert.showAndWait();
+        });
+    }
+
+    @FXML
+    private void searchForUsers() {
+        String prompt = userSearchField.getText();
+        if (prompt.isBlank()) {
+            return;
+        }
+
+        userListContainer.getChildren().removeAll();
+        userListContainer.getChildren().add(friendListLoading);
+
+        // SEARCH_USER <userId> <prompt>
+        SocketClient.getInstance().sendMessages("SEARCH_USER " + SessionManager.getInstance().getCurrentUser().getId() + " " + prompt);
+    }
+
+    public void onUserSearch(boolean found, List<Customer> users) {
+        Platform.runLater(() -> {
+            userListContainer.getChildren().clear();
+            if (!found) {
+                userListContainer.getChildren().add(new Label("No users found."));
+                return;
+            }
+
+            for (Customer user : users) {
+                GridPane userCard = createUserCard(user);
+                userListContainer.getChildren().add(userCard);
+            }
+        });
+
+    }
+
+    private GridPane createUserCard(Customer user) {
+        GridPane userCard = new GridPane();
+        userCard.setPrefHeight(70);
+
+        ColumnConstraints colConst1 = new ColumnConstraints();
+        colConst1.setFillWidth(true);
+        colConst1.setHgrow(Priority.ALWAYS);
+        colConst1.setPercentWidth(70.0);
+        userCard.getColumnConstraints().add(colConst1);
+        ColumnConstraints colConst2 = new ColumnConstraints();
+        colConst2.setFillWidth(true);
+        colConst2.setHgrow(Priority.ALWAYS);
+        colConst2.setPercentWidth(30.0);
+        userCard.getColumnConstraints().add(colConst2);
+
+        RowConstraints rowConst1 = new RowConstraints();
+        rowConst1.setPercentHeight(50.0);
+        userCard.getRowConstraints().add(rowConst1);
+        RowConstraints rowConst2 = new RowConstraints();
+        rowConst2.setPercentHeight(50.0);
+        userCard.getRowConstraints().add(rowConst2);
+
+        userCard.setStyle("-fx-background-color: rgba(127, 81, 255, .8); -fx-background-radius: 8;");
+        userCard.setPadding(new Insets(5, 5, 5, 15));
+
+        Text name = new Text(user.getName());
+        name.setFont(Font.font(null, FontWeight.BOLD, 14));
+        name.setStyle("-fx-fill: white;");
+
+        userCard.add(name, 0, 0);
+        GridPane.setMargin(name, new Insets(0, 0, 2, 0));
+        GridPane.setValignment(name, BOTTOM);
+
+        Text statusText = new Text(user.getUsername());
+        statusText.setFont(Font.font(null, 14));
+        statusText.setStyle("-fx-fill: white;");
+
+        userCard.add(statusText, 0, 1);
+        GridPane.setMargin(statusText, new Insets(2, 0, 0, 0));
+        GridPane.setValignment(statusText, TOP);
+
+        MenuButton actions = new MenuButton("Actions");
+        MenuItem m1 = new MenuItem("Chat");
+//        m1.setOnAction(e -> switchToChatTab(e));
+        MenuItem m2 = new MenuItem("New Group");
+        m2.setOnAction(e -> createNewGroup(user));
+        MenuItem m3 = new MenuItem("Add Friend");
+        m3.setOnAction(e -> addFriend(user));
+        MenuItem m4 = new MenuItem("Report Spam");
+        m4.setOnAction(e -> reportSpam(user));
+
+        actions.getItems().addAll(m1, m2, m3, m4);
+
+        userCard.add(actions, 1, 0, 1, 2);
+        GridPane.setValignment(actions, CENTER);
+        GridPane.setHalignment(actions, HPos.CENTER);
+
+        return userCard;
+    }
+
+    private void addFriend(Customer user) {
+        // ADD_FRIEND <userId> <friendId>
+        SocketClient.getInstance().sendMessages("ADD_FRIEND " + SessionManager.getInstance().getCurrentUser().getId() + " " + user.getId());
+    }
 }

@@ -1,12 +1,12 @@
 package com.haichutieu.chatsystem.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
 import com.haichutieu.chatsystem.server.dal.FriendsService;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
-import javafx.application.Platform;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
@@ -16,13 +16,13 @@ import java.nio.channels.*;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class SocketServer {
     final String HOST = "localhost";
-    final int PORT = 8080;
+    final int PORT = 8000;
     private final Map<Integer, AsynchronousSocketChannel> onlineUsers = new ConcurrentHashMap<>(); // Map<username, AsynchronousSocketChannel>
     private AsynchronousServerSocketChannel serverChannel;
+    private final int bufferSize = 1024;
 
     private SocketServer() {
         try {
@@ -58,24 +58,70 @@ public class SocketServer {
     }
 
     private void handleClient(AsynchronousSocketChannel clientChannel) {
+        StringBuilder clientData = new StringBuilder();
         Thread.startVirtualThread(() -> {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize);
             try {
                 while (clientChannel.read(buffer).get() != -1) {
                     buffer.flip();
                     byte[] bytes = new byte[buffer.limit()];
                     buffer.get(bytes);
-                    String input = new String(bytes);
                     buffer.clear();
-                    String response = processInput(input, clientChannel);
-                    if (response != null) {
-                        clientChannel.write(ByteBuffer.wrap(response.getBytes())).get();
+                    String input = new String(bytes);
+
+                    clientData.append(input);
+
+                    String line;
+                    while ((line = Util.readLine(clientData)) != null) {
+                        String response = processInput(line, clientChannel);
+                        if (response != null) {
+                            if (response.getBytes().length <= bufferSize) {
+                                clientChannel.write(ByteBuffer.wrap((response + "\n").getBytes())).get();
+                            } else {
+                                splitIntoChunks(response).forEach(chunk -> {
+                                    ByteBuffer responseBuffer = ByteBuffer.wrap(chunk.getBytes());
+                                    System.out.println("[SERVER] Sending: " + new String(responseBuffer.array()));
+                                    clientChannel.write(responseBuffer, responseBuffer, new CompletionHandler<Integer, ByteBuffer>() {
+                                        @Override
+                                        public void completed(Integer result, ByteBuffer attachment) {
+                                            if (attachment.hasRemaining()) {
+                                                System.out.println("[SERVER] Sending: " + new String(attachment.array()));
+                                                clientChannel.write(attachment, attachment, this);
+                                            }
+                                        }
+
+                                        @Override
+                                        public void failed(Throwable exc, ByteBuffer attachment) {
+                                            exc.printStackTrace();
+                                        }
+                                    });
+                                });
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    private List<String> splitIntoChunks(String message) {
+        List<String> chunks = new ArrayList<>();
+//        String[] parts = message.split(" ", 3);
+//        String content = message.substring(parts[0].length() + parts[1].length() + 2);
+
+        // Convert to byte to count before splitting (because of UTF-8 format)
+        byte[] bytes = message.getBytes();
+        int numChunks = (int) Math.ceil((double) bytes.length / bufferSize);
+//        chunks.add(parts[0] + " " + parts[1] + " " + numChunks);
+        for (int i = 0; i < numChunks; i++) {
+            int start = i * bufferSize;
+            int end = Math.min(bytes.length, (i + 1) * bufferSize);
+            chunks.add(new String(Arrays.copyOfRange(bytes, start, end)));
+        }
+
+        return chunks;
     }
 
     private String processInput(String input, AsynchronousSocketChannel clientChannel) {
@@ -85,9 +131,12 @@ public class SocketServer {
         return switch (command) {
             case "REGISTER" -> handleRegister(content, clientChannel);
             case "LOGIN" -> handleLogin(content, clientChannel);
-//            case "ADD_FRIEND" -> handleAddFriend(parts);
+            case "SEARCH_USER" -> handleSearchUser(content);
             case "GET_FRIEND_LIST" -> handleGetFriendList(content);
+            case "ADD_FRIEND" -> handleAddFriend(content);
             case "UNFRIEND" -> handleUnfriend(content);
+            case "SPAM" -> handleSpamReport(content);
+            case "BLOCK" -> handleBlock(content);
 //            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
 //                    handleMessage(parts);
 //            case "CREATE_GROUP" -> handleCreateGroup(parts);
@@ -96,6 +145,16 @@ public class SocketServer {
                     handleOffline(content, clientChannel);
             default -> "ERROR Unknown command";
         };
+    }
+
+    private String handleAddFriend(String content) {
+        String[] parts = content.split(" ");
+        int userID = Integer.parseInt(parts[0]);
+        int friendID = Integer.parseInt(parts[1]);
+        if (!FriendsService.addFriend(userID, friendID)) {
+            return "ADD_FRIEND ERROR " + friendID;
+        }
+        return "ADD_FRIEND OK " + friendID;
     }
 
     private String handleRegister(String user, AsynchronousSocketChannel clientChannel) {
@@ -173,20 +232,8 @@ public class SocketServer {
         int id = Integer.parseInt(parts[1]);
         onlineUsers.remove(id);
         CustomerService.updateLogoutCustomer(id, Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
-        return "OFFLINE User " + parts[0] + " is offline now";
+        return "OFFLINE User " + parts[0] + " is offline now END";
     }
-//    private String handleAddFriend(String[] parts) {
-//        if (parts.length < 3) {
-//            return "ERROR Invalid ADD_FRIEND command\n";
-//        }
-//        String username = parts[1];
-//        String friendUsername = parts[2];
-//        if (!users.containsKey(friendUsername)) {
-//            return "ERROR User does not exist\n";
-//        }
-//        friendships.get(username).add(friendUsername);
-//        return "OK Friend added\n";
-//    }
 
 //    private String handleMessage(String[] parts) {
 //        if (parts.length < 3) {
@@ -198,7 +245,7 @@ public class SocketServer {
 //        Customer recipientUser = onlineUsers.get(recipient);
 //        if (recipientUser != null) {
 
-    /// /            sendMessageToClient(recipientUser.getChannel(), "MESSAGE " + sender + ": " + messageContent + "\n");
+    //            sendMessageToClient(recipientUser.getChannel(), "MESSAGE " + sender + ": " + messageContent + "\n");
 //
 //            return "OK Message sent\n";
 //        } else {
@@ -206,12 +253,12 @@ public class SocketServer {
 //        }
 //    }
     private String handleGetFriendList(String userID) {
-        long id = Long.parseLong(userID);
+        int id = Integer.parseInt(userID);
         List<Customer> friends = null;
         friends = FriendsService.fetchFriends(id);
 
         if (friends == null) {
-            return "GET_FRIEND_LIST ERROR Failed to fetch friends\n";
+            return "GET_FRIEND_LIST ERROR Failed to fetch friends";
         }
 
         List<Integer> onlineUsers = new ArrayList<>();
@@ -219,22 +266,54 @@ public class SocketServer {
             onlineUsers.add(entry.getKey());
         }
 
-        String message = "GET_FRIEND_LIST " + Util.serializeObject(friends) + " END";
+        String message = "GET_FRIEND_LIST OK " + Util.serializeObject(friends) + " END";
         if (!onlineUsers.isEmpty()) {
             message += " ONLINE " + Util.serializeObject(onlineUsers) + " END";
         }
+        message += "\n";
 
         return message;
     }
 
     private String handleUnfriend(String message) {
         String[] parts = message.split(" ");
-        long userID = Integer.parseInt(parts[0]);
-        long friendID = Integer.parseInt(parts[1]);
+        int userID = Integer.parseInt(parts[0]);
+        int friendID = Integer.parseInt(parts[1]);
         if (!FriendsService.removeFriend(userID, friendID)) {
             return "UNFRIEND ERROR " + friendID;
         }
         return "UNFRIEND OK " + friendID;
+    }
+
+    private String handleSearchUser(String content) {
+        String[] parts = content.split(" ", 2);
+        int username = Integer.parseInt(parts[0]);
+        String prompt = parts[1];
+        List<Customer> users = FriendsService.fetchUsers(username, prompt);
+        if (users == null) {
+            return "SEARCH_USER ERROR Failed to search user";
+        }
+        return "SEARCH_USER OK " + Util.serializeObject(users);
+    }
+
+    private String handleSpamReport(String content) {
+        String[] parts = content.split(" ");
+        int userID = Integer.parseInt(parts[0]);
+        int reportedID = Integer.parseInt(parts[1]);
+        if (!FriendsService.reportSpam(userID, reportedID)) {
+            return "SPAM ERROR " + reportedID;
+        }
+        return "SPAM OK " + reportedID;
+    }
+
+    private String handleBlock(String message) {
+        String[] parts = message.split(" ");
+        int userID = Integer.parseInt(parts[0]);
+        int blockedID = Integer.parseInt(parts[1]);
+        if (!FriendsService.blockUser(userID, blockedID)) {
+            return "BLOCK ERROR " + blockedID;
+        }
+        return "BLOCK OK " + blockedID;
     }
 //    private String handleCreateGroup(String[] parts) {
 //        if (parts.length < 3) {
