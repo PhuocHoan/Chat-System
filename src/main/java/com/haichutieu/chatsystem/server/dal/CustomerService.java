@@ -6,6 +6,8 @@ import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import java.util.concurrent.CompletableFuture;
+
 public class CustomerService {
     public static void addCustomer(Customer customer) {
         Transaction transaction = null;
@@ -19,6 +21,15 @@ public class CustomerService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static Customer getCustomerByID(int userID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("select C from Customer C where C.id = :id", Customer.class).setParameter("id", userID).uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static Customer getCustomerByUsername(String username) {

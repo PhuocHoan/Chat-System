@@ -21,4 +21,14 @@ public class Util {
             throw new RuntimeException(e);
         }
     }
+
+    public static String readLine(StringBuilder sb) {
+        int index = sb.indexOf("\n");
+        if (index != -1) {
+            String line = sb.substring(0, index);
+            sb.delete(0, index + 1); // Remove the line and the newline character
+            return line;
+        }
+        return null;
+    }
 }
