@@ -6,14 +6,17 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "message_display")
+@IdClass(MessageDisplayId.class) // Composite primary key
 public class MessageDisplay {
+
     @Id
-    @Column(name = "message_id", nullable = false)
-    private long messageID;
+    @ManyToOne
+    @JoinColumn(name = "message_id", nullable = false)
+    private Message message;
 
     @Id
     @Column(name = "customer_id", nullable = false)
-    private long customerID;
+    private int customerID;
 
     @Column(name = "status", nullable = false)
     private boolean status;
@@ -21,19 +24,25 @@ public class MessageDisplay {
     public MessageDisplay() {
     }
 
-    public long getMessageID() {
-        return messageID;
+    public MessageDisplay(Message message, int customerID, boolean status) {
+        this.message = message;
+        this.customerID = customerID;
+        this.status = status;
     }
 
-    public void setMessageID(long messageID) {
-        this.messageID = messageID;
+    public Message getMessage() {
+        return message;
     }
 
-    public long getCustomerID() {
+    public void setMessage(Message message) {
+        this.message = message;
+    }
+
+    public int getCustomerID() {
         return customerID;
     }
 
-    public void setCustomerID(long customerID) {
+    public void setCustomerID(int customerID) {
         this.customerID = customerID;
     }
 
@@ -49,19 +58,19 @@ public class MessageDisplay {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        MessageDisplay messageDisplay = (MessageDisplay) o;
-        return messageID == messageDisplay.messageID && customerID == messageDisplay.customerID;
+        MessageDisplay that = (MessageDisplay) o;
+        return Objects.equals(message.getId(), that.message.getId()) && customerID == that.customerID;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(messageID, customerID);
+        return Objects.hash(message.getId(), customerID);
     }
 
     @Override
     public String toString() {
         return "MessageDisplay{" +
-                "messageID=" + messageID +
+                "messageID=" + message.getId() +
                 ", customerID=" + customerID +
                 ", status=" + status +
                 '}';

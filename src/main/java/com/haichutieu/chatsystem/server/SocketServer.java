@@ -1,29 +1,32 @@
 package com.haichutieu.chatsystem.server;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.dto.ChatList;
-import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
-import com.haichutieu.chatsystem.server.dal.MessageService;
+import com.haichutieu.chatsystem.dto.MessageConversation;
+import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.server.dal.FriendsService;
+import com.haichutieu.chatsystem.server.dal.MessageService;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
-import javafx.application.Platform;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 public class SocketServer {
     final String HOST = "localhost";
     final int PORT = 8080;
-    private final Map<Integer, AsynchronousSocketChannel> onlineUsers = new ConcurrentHashMap<>(); // Map<username, AsynchronousSocketChannel>
+    private final Map<Integer, AsynchronousSocketChannel> onlineUsers = new ConcurrentHashMap<>(); // Map<user_id, AsynchronousSocketChannel>
     private AsynchronousServerSocketChannel serverChannel;
 
     private SocketServer() {
@@ -35,10 +38,10 @@ public class SocketServer {
             serverChannel.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
                 @Override
                 public void completed(AsynchronousSocketChannel clientChannel, Void attachment) {
-                    // Accept the next connection
-                    serverChannel.accept(null, this);
                     // Handle this connection
                     handleClient(clientChannel);
+                    // Accept the next connection
+                    serverChannel.accept(null, this);
                 }
 
                 @Override
@@ -59,19 +62,35 @@ public class SocketServer {
         return SocketServerHelper.INSTANCE;
     }
 
+    private String readLine(StringBuilder sb) {
+        int index = sb.indexOf("\n");
+        if (index != -1) {
+            String line = sb.substring(0, index);
+            sb.delete(0, index + 1); // Remove the line and the newline character
+            return line;
+        }
+        return null;
+    }
+
     private void handleClient(AsynchronousSocketChannel clientChannel) {
+        StringBuilder clientData = new StringBuilder();
         Thread.startVirtualThread(() -> {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(1048576);
             try {
                 while (clientChannel.read(buffer).get() != -1) {
                     buffer.flip();
                     byte[] bytes = new byte[buffer.limit()];
                     buffer.get(bytes);
-                    String input = new String(bytes);
                     buffer.clear();
-                    String response = processInput(input, clientChannel);
-                    if (response != null) {
-                        clientChannel.write(ByteBuffer.wrap(response.getBytes())).get();
+                    String input = new String(bytes);
+
+                    clientData.append(input);
+                    String line;
+                    while ((line = readLine(clientData)) != null) {
+                        String response = processInput(line, clientChannel);
+                        if (response != null) {
+                            clientChannel.write(ByteBuffer.wrap((response + "\n").getBytes())).get();
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -84,20 +103,49 @@ public class SocketServer {
         String[] parts = input.split(" ", 2);
         String command = parts[0];
         String content = parts[1];
-        return switch (command) {
-            case "REGISTER" -> handleRegister(content, clientChannel);
-            case "LOGIN" -> handleLogin(content, clientChannel);
-            case "CHAT_LIST" -> handleChatList(content);
-//            case "ADD_FRIEND" -> handleAddFriend(parts);
-            case "GET_FRIEND_LIST" -> handleGetFriendList(content);
-            case "UNFRIEND" -> handleUnfriend(content);
-//            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
-//                    handleMessage(parts);
-//            case "CREATE_GROUP" -> handleCreateGroup(parts);
-//            case "GROUP_MESSAGE" -> handleGroupMessage(parts);
-            case "OFFLINE" -> handleOffline(content, clientChannel); // user exit or logout
-            default -> throw new IllegalStateException("Unexpected value: " + command);
-        };
+        switch (command) {
+            case "REGISTER":
+                return handleRegister(content, clientChannel);
+            case "LOGIN":
+                return handleLogin(content, clientChannel);
+            case "CHAT_LIST":
+                return getChatList(content);
+            case "GET_ONLINE_USERS":
+                return getOnlineUsers();
+            case "GET_MEMBER_CONVERSATION":
+                return getMemberConversation(content);
+            case "GET_ALL_MEMBER_CONVERSATION":
+                return getAllMemberConversation(content);
+            case "GET_MEMBER_CONVERSATION_ADMIN":
+                return getMemberConversationAdmin(content);
+            case "GET_MESSAGE_CONVERSATION":
+                return getMessageConversation(content);
+            case "UPDATE_STATUS_CONVERSATION":
+                return updateStatusConversation(content);
+            case "MESSAGE":
+                handleMessage(content);
+                break;
+            case "REMOVE_MESSAGE_ME":
+                return removeMessageMe(content);
+            case "REMOVE_MESSAGE_ALL":
+                removeMessageAll(content);
+                break;
+            case "REMOVE_ALL_MESSAGE_ME":
+                return removeAllMessageMe(content);
+//            case "ADD_FRIEND":
+//                return handleAddFriend(parts);
+            case "GET_FRIEND_LIST":
+                return handleGetFriendList(content);
+            case "UNFRIEND":
+                return handleUnfriend(content);
+//            case "CREATE_GROUP":
+//              return handleCreateGroup(parts);
+            case "OFFLINE":
+                return handleOffline(content, clientChannel); // user exit or logout
+            default:
+                throw new IllegalStateException("Unexpected value: " + command);
+        }
+        return null;
     }
 
     private String handleRegister(String user, AsynchronousSocketChannel clientChannel) {
@@ -106,7 +154,13 @@ public class SocketServer {
         if (Objects.equals(parts[0], "ERROR")) {
             return "REGISTER ERROR Please fill in the fields below.";
         }
-        List<String> fields = Util.deserializeObject(parts[1], List.class);
+        List<String> fields;
+        try {
+            fields = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (CustomerService.getCustomerByUsername(fields.get(1)) != null) {
             return "REGISTER ERROR Username already exists";
         }
@@ -140,7 +194,13 @@ public class SocketServer {
         if (parts[0].equals("ERROR")) {
             return "LOGIN ERROR Please fill in the fields below.";
         }
-        List<String> fields = Util.deserializeObject(parts[1], List.class);
+        List<String> fields;
+        try {
+            fields = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         Customer customer = CustomerService.getCustomerByUsername(fields.get(0));
 
         if (customer == null || !BCrypt.checkpw(fields.get(1), customer.getPassword())) {
@@ -162,21 +222,62 @@ public class SocketServer {
         return "LOGIN " + customerContent + " END User " + customer.getUsername() + " is online now"; // END is defined as the end of the data sending
     }
 
-    private String handleChatList(String id) {
+    private String getChatList(String id) {
         List<ChatList> chatList = MessageService.getChatList(Integer.parseInt(id));
         return "CHAT_LIST " + Util.serializeObject(chatList);
     }
 
-    private String handleOffline(String username, AsynchronousSocketChannel clientChannel) {
+    private String getOnlineUsers() {
+        return "GET_ONLINE_USERS " + Util.serializeObject(onlineUsers.keySet());
+    }
+
+    private String getMemberConversation(String user) {
+        String[] parts = user.split(" ", 2);
+        var memberConversation = MessageService.getMemberConversationUser(Long.parseLong(parts[0]));
+        return "GET_MEMBER_CONVERSATION " + parts[0] + " " + Util.serializeObject(memberConversation);
+    }
+
+    private String getAllMemberConversation(String user) {
+        String[] parts = user.split(" ", 2);
+        List<Long> conversationIDs;
+        try {
+            conversationIDs = Util.deserializeObject(parts[0], new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        Map<Long, List<Integer>> memberConversations = new HashMap<>();
+        conversationIDs.forEach(conversationID -> memberConversations.put(conversationID, MessageService.getMemberConversationUser(conversationID, Integer.parseInt(parts[1]))));
+        return "GET_ALL_MEMBER_CONVERSATION " + Util.serializeObject(memberConversations);
+    }
+
+    private String getMemberConversationAdmin(String message) {
+        var memberConversation = MessageService.getMemberConversation(Long.parseLong(message));
+        return "GET_MEMBER_CONVERSATION_ADMIN " + Util.serializeObject(memberConversation);
+    }
+
+    private String getMessageConversation(String user) {
+        String[] parts = user.split(" ", 2);
+        var messageConversation = MessageService.getMessageConversation(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
+        return "GET_MESSAGE_CONVERSATION " + Util.serializeObject(messageConversation);
+    }
+
+    private String updateStatusConversation(String user) {
+        String[] parts = user.split(" ", 2);
+        MessageService.updateStatusConversation(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
+        return "UPDATE_STATUS_CONVERSATION Update status conversation successfully";
+    }
+
+    private String handleOffline(String user, AsynchronousSocketChannel clientChannel) {
         try {
             clientChannel.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        if (username.equals("null")) {
+        if (user.equals("null")) {
             return null;
         }
-        String[] parts = username.split(" ", 4);
+        String[] parts = user.split(" ", 4);
         int id = Integer.parseInt(parts[1]);
         onlineUsers.remove(id);
         CustomerService.updateLogoutCustomer(id, Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
@@ -196,26 +297,82 @@ public class SocketServer {
 //        return "OK Friend added\n";
 //    }
 
-//    private String handleMessage(String[] parts) {
-//        if (parts.length < 3) {
-//            return "ERROR Invalid MESSAGE command\n";
-//        }
-//        String sender = parts[1];
-//        String recipient = parts[2].split(" ", 2)[0];
-//        String messageContent = parts[2].split(" ", 2)[1];
-//        Customer recipientUser = onlineUsers.get(recipient);
-//        if (recipientUser != null) {
+    private void handleMessage(String content) {
+        String[] parts = content.split(" END ", 2);
+        ChatList conversation;
+        MessageConversation message;
+        try {
+            conversation = Util.deserializeObject(parts[0], new TypeReference<>() {
+            });
+            message = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        var memberConversation = MessageService.getMemberConversationUser(message.conversation_id);
+        // persist message to message table and message_display table
 
-    /// /            sendMessageToClient(recipientUser.getChannel(), "MESSAGE " + sender + ": " + messageContent + "\n");
-//
-//            return "OK Message sent\n";
-//        } else {
-//            return "ERROR User is not online\n";
-//        }
-//    }
+        message.id = MessageService.addMessage(message, memberConversation); // update message_id in MessageConversation
+
+        String sendingMessage = "MESSAGE " + Util.serializeObject(conversation) + " END " + Util.serializeObject(message);
+        // send message to all members in same conversation
+        assert memberConversation != null;
+        memberConversation.forEach(member -> {
+            AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
+            if (memberChannel != null) {
+                try {
+                    memberChannel.write(ByteBuffer.wrap((sendingMessage + "\n").getBytes())).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private String removeMessageMe(String content) {
+        String[] parts = content.split(" ", 2);
+        MessageService.removeMessage(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
+        return "REMOVE_MESSAGE_ME Remove message on your side successfully";
+    }
+
+    private void removeMessageAll(String content) {
+        MessageConversation message;
+        try {
+            message = Util.deserializeObject(content, new TypeReference<MessageConversation>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        var memberConversation = MessageService.getMemberConversationUser(message.conversation_id);
+        MessageService.removeMessage(message.id);
+        String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message);
+        // send message to all members in same conversation
+        memberConversation.forEach(member -> {
+            AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
+            if (memberChannel != null) {
+                try {
+                    memberChannel.write(ByteBuffer.wrap((removeMessage + "\n").getBytes())).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private String removeAllMessageMe(String content) {
+        String[] parts = content.split(" END ", 2);
+        try {
+            MessageService.removeAllMessage(Util.deserializeObject(parts[0], new TypeReference<>() {
+            }), Integer.parseInt(parts[1]));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return "REMOVE_ALL_MESSAGE_ME Remove all message on your side successfully";
+    }
+
     private String handleGetFriendList(String userID) {
         long id = Long.parseLong(userID);
-        List<Customer> friends = null;
+        List<Customer> friends;
         friends = FriendsService.fetchFriends(id);
 
         if (friends == null) {
@@ -254,44 +411,6 @@ public class SocketServer {
 //        Group group = new Group(groupName, members);
 //        groups.put(groupName, group);
 //        return "OK Group created\n";
-//    }
-
-//    private String handleGroupMessage(String[] parts) {
-//        if (parts.length < 3) {
-//            return "ERROR Invalid GROUP_MESSAGE command\n";
-//        }
-//        String sender = parts[1];
-//        String groupName = parts[2].split(" ", 2)[0];
-//        String messageContent = parts[2].split(" ", 2)[1];
-//        Group group = groups.get(groupName);
-//        if (group != null) {
-//            for (String member : group.getMembers()) {
-//                if (!member.equals(sender)) {
-//                    User recipientUser = onlineUsers.get(member);
-//                    if (recipientUser != null) {
-//                        sendMessageToClient(recipientUser.getChannel(), "GROUP_MESSAGE [" + groupName + "] " + sender + ": " + messageContent + "\n");
-//                    }
-//                }
-//            }
-//            return "OK Group message sent\n";
-//        } else {
-//            return "ERROR Group does not exist\n";
-//        }
-//    }
-
-//    private void sendMessageToClient(AsynchronousSocketChannel channel, String message) {
-//        ByteBuffer buffer = ByteBuffer.wrap(message.getBytes());
-//        channel.write(buffer, buffer, new CompletionHandler<Integer, ByteBuffer>() {
-//            @Override
-//            public void completed(Integer result, ByteBuffer attachment) {
-//                // Successfully sent
-//            }
-//
-//            @Override
-//            public void failed(Throwable exc, ByteBuffer attachment) {
-//                exc.printStackTrace();
-//            }
-//        });
 //    }
 
     private static class SocketServerHelper {

@@ -4,8 +4,10 @@ import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
-import com.haichutieu.chatsystem.util.Util;
+import com.haichutieu.chatsystem.dto.MessageConversation;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -13,43 +15,46 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.VPos;
-import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
-import javafx.scene.layout.*;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.StrokeType;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import javafx.scene.text.*;
 
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ChatGUI {
-
     private static ChatGUI instance;
-    private final ObservableList<ChatList> conversations = FXCollections.observableArrayList();
-    private final Map<Long, GridPane> conversationGridPaneMap = new HashMap<>(); // Map<conversation_id, GridPane>
-    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    @FXML
-    private GridPane screen;
+    public ObservableList<ChatList> conversations = FXCollections.observableArrayList();
+    public Map<Long, GridPane> conversationGridPaneMap = new HashMap<>(); // Map<conversation_id, GridPane>
+    public ObservableList<MessageConversation> messages = FXCollections.observableArrayList();
+    public Map<Long, VBox> messageVBoxMap = new HashMap<>(); // Map<message_id, VBox>
+    public Map<Long, List<Integer>> memberConversation = new HashMap<>(); // store list of member in all conversation
+    public ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
+    public ChatList isFocusingConversation;
+    public ObservableList<MessageConversation> searchMessages = FXCollections.observableArrayList();
 
     @FXML
-    private Button btn_send_message;
+    private Button btnSendMessage;
+
+    @FXML
+    private ImageView avatar;
 
     @FXML
     private VBox chatArea;
@@ -58,13 +63,43 @@ public class ChatGUI {
     private TextField chatField;
 
     @FXML
+    private VBox chatList;
+
+    @FXML
+    private HBox deleteAllMessages;
+
+    @FXML
     private ImageView friendsBtn;
+
+    @FXML
+    private Text headerName;
+
+    @FXML
+    private Text headerStatus;
+
+    @FXML
+    private GridPane mainChatContainer;
+
+    @FXML
+    private VBox rightSideBar;
+
+    @FXML
+    private Text rightSideBarName;
+
+    @FXML
+    private Text rightSideBarStatus;
+
+    @FXML
+    private ScrollPane chatScrollPane;
+
+    @FXML
+    private GridPane screen;
 
     @FXML
     private TextField searchChatList;
 
     @FXML
-    private VBox chatList;
+    private TextField searchMessage;
 
     public ChatGUI() {
         instance = this;
@@ -80,7 +115,7 @@ public class ChatGUI {
         screen.setFocusTraversable(true);
         screen.setOnMouseClicked(event -> screen.requestFocus());
         // Handle the enter key event
-        btn_send_message.setOnMouseClicked(e -> sendMessage());
+        btnSendMessage.setOnMouseClicked(e -> sendMessage());
         chatField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 sendMessage();
@@ -95,18 +130,24 @@ public class ChatGUI {
             }
         });
 
-        FilteredList<ChatList> filteredConversations = new FilteredList<>(conversations, p -> true);
-        searchChatList.textProperty().addListener((observable, oldValue, newValue) -> {
-            filteredConversations.setPredicate(chat -> {
-                // If filter text is empty, display all persons.
-                if (newValue == null || newValue.isEmpty()) {
-                    return true;
-                }
-                // Filter by the group name
-                String lowerCaseFilter = newValue.toLowerCase();
-                return chat.conversationName.toLowerCase().contains(lowerCaseFilter);
-            });
+        // auto scroll to bottom in scrollpane
+        chatArea.heightProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                chatScrollPane.setVvalue((Double) newValue);
+            }
         });
+
+        FilteredList<ChatList> filteredConversations = new FilteredList<>(conversations, p -> true);
+        searchChatList.textProperty().addListener((observable, oldValue, newValue) -> filteredConversations.setPredicate(chat -> {
+            // If filter text is empty, display all persons.
+            if (newValue == null || newValue.isEmpty()) {
+                return true;
+            }
+            // Filter by the group name
+            String lowerCaseFilter = newValue.toLowerCase();
+            return chat.conversationName.toLowerCase().contains(lowerCaseFilter);
+        }));
 
         filteredConversations.addListener((ListChangeListener<ChatList>) change -> {
             while (change.next()) {
@@ -123,7 +164,58 @@ public class ChatGUI {
             }
         });
 
+        messages.addListener((ListChangeListener<MessageConversation>) change -> {
+            while (change.next()) {
+                if (change.wasRemoved()) {
+                    for (MessageConversation removedItem : change.getRemoved()) {
+                        removeItemFromMessageConversation(removedItem);
+                    }
+                }
+                if (change.wasAdded()) {
+                    for (MessageConversation addedItem : change.getAddedSubList()) {
+                        addItemToMessageConversation(addedItem);
+                    }
+                }
+            }
+        });
+
+        FilteredList<MessageConversation> filteredMessages = new FilteredList<>(searchMessages, p -> true);
+        searchMessage.textProperty().addListener((observable, oldValue, newValue) -> filteredMessages.setPredicate(message -> {
+            // If filter text is empty, do not display.
+            if (newValue == null || newValue.isEmpty()) {
+                return false;
+            }
+            // Filter by the message
+            String lowerCaseFilter = newValue.toLowerCase();
+            return message.message.toLowerCase().contains(lowerCaseFilter);
+        }));
+        filteredMessages.addListener((ListChangeListener<MessageConversation>) change -> {
+            while (change.next()) {
+                if (change.wasRemoved()) {
+                    for (MessageConversation removedItem : change.getRemoved()) {
+//                        removeItemFromMessageConversation(removedItem);
+                        // remove from message search list
+                    }
+                }
+                if (change.wasAdded()) {
+                    for (MessageConversation addedItem : change.getAddedSubList()) {
+//                        addItemToMessageConversation(addedItem);
+                        // add to message search list
+                    }
+                }
+            }
+        });
+
         ChatAppController.getChatList();
+
+        // refresh online users every 1 minute to check for online conversation
+        scheduler.scheduleAtFixedRate(() -> {
+            ChatAppController.getOnlineUsers();
+            List<Long> conversationIDs = conversations.stream().map(conversation -> conversation.conversationID).toList();
+            if (!conversationIDs.isEmpty()) {
+                ChatAppController.getAllMemberConversation(conversationIDs);
+            }
+        }, 5, 60, TimeUnit.SECONDS); // delay first 5s
     }
 
     @FXML
@@ -140,30 +232,46 @@ public class ChatGUI {
     private void addItemToChatList(ChatList item) {
         Platform.runLater(() -> {
             GridPane conversation = createSingleConversation(item);
-            conversationGridPaneMap.put(item.conversationId, conversation);
+            conversationGridPaneMap.put(item.conversationID, conversation);
             chatList.getChildren().addFirst(conversation);
         });
     }
 
     private void removeItemFromChatList(ChatList item) {
         Platform.runLater(() -> {
-            GridPane conversation = conversationGridPaneMap.remove(item.conversationId);
+            GridPane conversation = conversationGridPaneMap.remove(item.conversationID);
             if (conversation != null) {
                 chatList.getChildren().remove(conversation);
             }
         });
     }
 
+    private void addItemToMessageConversation(MessageConversation message) {
+        Platform.runLater(() -> {
+            VBox item = message.senderName.equals(SessionManager.getInstance().getCurrentUser().getName()) ? createMessageTo(message) : createMessageFrom(message);
+            messageVBoxMap.put(message.id, item);
+            chatArea.getChildren().add(item);
+        });
+    }
+
+    private void removeItemFromMessageConversation(MessageConversation message) {
+        Platform.runLater(() -> {
+            VBox item = messageVBoxMap.remove(message.id);
+            if (item != null) {
+                chatArea.getChildren().remove(item);
+            }
+        });
+    }
+
     // when user chat to a conversation or message from another conversation comes in
     private void addNewConversation(ChatList chat) {
-        conversations.removeIf(c -> c.conversationId == chat.conversationId);
+        conversations.removeIf(c -> c.conversationID == chat.conversationID);
         conversations.add(chat);
     }
 
     public GridPane createSingleConversation(ChatList chat) {
         GridPane conversation = new GridPane();
         conversation.setMinHeight(80);
-        conversation.setStyle("-fx-background-color: rgba(127, 81, 255, .8); -fx-background-radius: 8;");
 
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setHgrow(javafx.scene.layout.Priority.SOMETIMES);
@@ -201,22 +309,29 @@ public class ChatGUI {
         Circle circle = new Circle(6, Paint.valueOf("#6be150e0"));
         GridPane.setMargin(circle, new Insets(0, 0, 0, 57));
         circle.setStroke(Paint.valueOf("BLACK"));
+        circle.setVisible(false);
         conversation.add(circle, 0, 1);
 
         Text content = new Text();
         String text;
         if (chat.senderName == null) {
             text = "";
-        } else if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getUsername())) {
+        } else if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
             text = "You: " + chat.latestMessage;
-            if (text.length() > 30) {
-                text = text.substring(0, 27) + "...";
-            }
         } else {
-            text = chat.senderName + ": " + chat.latestMessage;
-            if (text.length() > 30) {
-                text = text.substring(0, 27) + "...";
+            if (chat.isGroup) {
+                text = chat.senderName + ": " + chat.latestMessage;
+            } else {
+                text = chat.latestMessage;
             }
+        }
+        if (text.length() > 30) {
+            text = text.substring(0, 27) + "...";
+        }
+        if (isFocusingConversation != null) {
+            content.setFill(chat.conversationID == isFocusingConversation.conversationID ? Color.BLACK : Color.YELLOW);
+        } else {
+            content.setFill(chat.isSeen ? Color.BLACK : Color.YELLOW);
         }
         content.setText(text);
         GridPane.setValignment(content, javafx.geometry.VPos.TOP);
@@ -233,19 +348,128 @@ public class ChatGUI {
         HBox.setMargin(conversationTimeStamp, new Insets(0, 0, 15, 0));
         // update conversation time, and check for user online every 1 minute
         scheduler.scheduleAtFixedRate(() -> {
+            // update conversation time
             conversationTimeStamp.setText(formatConversationTimeStamp(chat.latestTime));
             if (conversationTimeStamp.getText().equals("Just now")) {
                 conversationName.setWrappingWidth(210);
             } else {
-                conversationName.setWrappingWidth(240);
+                conversationName.setWrappingWidth(230);
             }
-            // check online
-
         }, 0, 1, TimeUnit.MINUTES);
+
+        scheduler.scheduleAtFixedRate(() -> {
+            // check online conversation
+            // if exist an online member in this conversation -> conversation status: online
+            if (!memberConversation.isEmpty()) {
+                circle.setVisible(memberConversation.get(chat.conversationID).stream().anyMatch(user ->
+                        SessionManager.getInstance().onlineUsers.contains(user)
+                ));
+            } else {
+                circle.setVisible(false);
+            }
+            if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
+                String status = circle.isVisible() ? "Online" : "Offline";
+                headerStatus.setText(status);
+                rightSideBarStatus.setText(status);
+            }
+        }, 5, 60, TimeUnit.SECONDS); // delay first 5s
+
         conversationInfo.getChildren().addAll(conversationName, conversationTimeStamp);
 
         conversation.add(conversationInfo, 1, 0);
+
+        conversation.getStyleClass().add("conversation"); // styling for conversation
+
+        conversation.setOnMouseClicked(event -> {
+            content.setFill(Color.BLACK);
+            avatar.setImage(new Image(Objects.requireNonNull(getClass().getResource(chat.isGroup ? "../../assets/group.png" : "../../assets/avatar.png")).toExternalForm()));
+            avatar.setFitHeight(131);
+            avatar.setFitWidth(95);
+            avatar.setPreserveRatio(true);
+            isFocusingConversation = chat;
+            ChatAppController.getMessageConversation(chat.conversationID);
+            ChatAppController.updateStatusConversation(chat.conversationID); // update has seen status conversation
+            headerName.setText(chat.conversationName);
+            rightSideBarName.setText(chat.conversationName);
+            mainChatContainer.setVisible(true);
+            rightSideBar.setVisible(true);
+            deleteAllMessages.setOnMouseClicked(e -> onRemoveAll());
+        });
+
         return conversation;
+    }
+
+    public void getMemberConversation(Long conversationID, List<Integer> members) {
+        memberConversation.put(conversationID, members);
+    }
+
+    public void getAllMemberConversation(Map<Long, List<Integer>> memberConversationServer) {
+        memberConversation.putAll(memberConversationServer);
+    }
+
+    public void getMessageConversation(List<MessageConversation> messagesServer) {
+        messages.setAll(messagesServer);
+        searchMessages.setAll(messagesServer);
+    }
+
+    // create a message style from user to others
+    public VBox createMessageTo(MessageConversation message) {
+        Text messageTo = new Text(message.message);
+        messageTo.setFont(Font.font(14));
+        messageTo.setFontSmoothingType(FontSmoothingType.LCD);
+        TextFlow textFlow = new TextFlow(messageTo);
+        textFlow.setPrefWidth(510);
+        textFlow.getStyleClass().add("message-to");
+        textFlow.setPadding(new Insets(10, 10, 10, 10));
+        Button remove = new Button("remove");
+        remove.setOnMouseClicked(event -> onRemove(message));
+        Text time = new Text(formatChatTimeStamp(message.time));
+        HBox.setMargin(time, new Insets(0, 10, 0, 10));
+        HBox hbox = new HBox(remove, time, textFlow);
+        hbox.setAlignment(Pos.CENTER_LEFT);
+        return new VBox(hbox);
+    }
+
+    // create a message style from others to user
+    public VBox createMessageFrom(MessageConversation message) {
+        Text messageFrom = new Text(message.message);
+        messageFrom.setFont(Font.font(14));
+        messageFrom.setFontSmoothingType(FontSmoothingType.LCD);
+        TextFlow textFlow = new TextFlow(messageFrom);
+        textFlow.setPrefWidth(510);
+        textFlow.getStyleClass().add("message-from");
+        textFlow.setPadding(new Insets(10, 10, 10, 10));
+        Button remove = new Button("remove");
+        remove.setOnMouseClicked(event -> onRemove(message));
+        Text time = new Text(formatChatTimeStamp(message.time));
+        HBox.setMargin(time, new Insets(0, 10, 0, 10));
+        HBox hbox = new HBox(textFlow, time, remove);
+        hbox.setAlignment(Pos.CENTER_LEFT);
+        Text sender = new Text(message.senderName);
+        return new VBox(sender, hbox);
+    }
+
+    void onRemove(MessageConversation message) {
+        if (message.senderID != SessionManager.getInstance().getCurrentUser().getId()) {
+            // if message is not mine then just remove on my side
+            ChatAppController.removeMessage(message.id);
+            messages.remove(message);
+        } else {
+            // my message
+            if ((System.currentTimeMillis() - message.time.getTime()) / (1000 * 60 * 60 * 24) > 1) {
+                // if message is over 1 day then just remove on my side
+                ChatAppController.removeMessage(message.id);
+                messages.remove(message);
+            } else {
+                // remove for all members
+                ChatAppController.removeMessage(message);
+            }
+        }
+    }
+
+    void onRemoveAll() {
+        ChatAppController.removeAllMessage(isFocusingConversation);
+        messages.clear();
     }
 
     public String formatConversationTimeStamp(Timestamp timestamp) {
@@ -272,31 +496,42 @@ public class ChatGUI {
         return new SimpleDateFormat("dd/MM/yyyy HH:mm").format(timestamp);
     }
 
-    public void chatListResult(String message) {
+    public void chatListResult(List<ChatList> conversation) {
         // Update the chat list for the first time
-        conversations.addAll(Util.deserializeListObject(message, ChatList.class));
-        // test
-//        ChatList test2 = new ChatList();
-//        test2.conversationId = 90;
-//        test2.senderName = "fds";
-//        test2.latestTime = new Timestamp(System.currentTimeMillis());
-//        test2.conversationName = "cucu";
-//        test2.latestMessage = "helo be";
-//        addNewConversation(test2);
-//        ChatList test3 = new ChatList();
-//        test3.conversationId = 120;
-//        test3.senderName = "con cac";
-//        test3.latestTime = new Timestamp(System.currentTimeMillis());
-//        test3.conversationName = "lelo leo";
-//        test3.latestMessage = "helo bevsadf";
-//        addNewConversation(test3);
+        conversations.setAll(conversation);
     }
 
     void sendMessage() {
-
+        Timestamp time = new Timestamp(System.currentTimeMillis());
+        String sendingMessage = chatField.getText();
+        MessageConversation message = new MessageConversation(isFocusingConversation.conversationID, SessionManager.getInstance().getCurrentUser().getId(), SessionManager.getInstance().getCurrentUser().getName(), time, sendingMessage);
+        ChatList conversation = new ChatList(isFocusingConversation.conversationID, isFocusingConversation.isGroup ? isFocusingConversation.conversationName : message.senderName, message.senderName, sendingMessage, time, isFocusingConversation.isGroup, false);
+        ChatAppController.sendMessage(conversation, message);
+        if (isFocusingConversation.isGroup) {
+            ++SessionManager.numberGroupChatWith;
+        } else {
+            ++SessionManager.numberPeopleChatWith;
+        }
+        chatField.clear();
     }
 
-    public void renderChatArea() {
+    // when user send message to a conversation or message from another conversation comes in
+    public void receiveMessage(ChatList conversation, MessageConversation message) {
+        if (message.senderID == SessionManager.getInstance().getCurrentUser().getId()) {
+            conversation.isSeen = true;
+            conversation.conversationName = isFocusingConversation.conversationName;
+        }
+        addNewConversation(conversation);
+        messages.add(message);
+    }
 
+    public void removeMessageAll(MessageConversation message) {
+        // when user chat to a conversation or message from another conversation comes in
+        if (message.conversation_id == isFocusingConversation.conversationID) {
+            // if user is focusing conversation that someone removes message
+            messages.removeIf((oldMessage) ->
+                    oldMessage.id == message.id
+            );
+        }
     }
 }

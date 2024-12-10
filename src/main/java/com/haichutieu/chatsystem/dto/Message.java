@@ -3,11 +3,16 @@ package com.haichutieu.chatsystem.dto;
 import jakarta.persistence.*;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
 @Table(name = "message")
 public class Message {
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<MessageDisplay> messageDisplays = new ArrayList<>();
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -25,6 +30,23 @@ public class Message {
     private String message;
 
     public Message() {
+    }
+
+    public Message(Long conversationID, int customerID, Timestamp time, String message) {
+        this.conversationID = conversationID;
+        this.customerID = customerID;
+        this.time = time;
+        this.message = message;
+    }
+
+    public void addMessageDisplay(MessageDisplay messageDisplay) {
+        messageDisplays.add(messageDisplay);
+        messageDisplay.setMessage(this);
+    }
+
+    public void removeMessageDisplay(MessageDisplay messageDisplay) {
+        messageDisplays.remove(messageDisplay);
+        messageDisplay.setMessage(null);
     }
 
     public long getId() {
