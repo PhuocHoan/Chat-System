@@ -2,9 +2,13 @@ package com.haichutieu.chatsystem.client.util;
 
 import com.haichutieu.chatsystem.dto.Customer;
 
+import java.util.List;
+
 public class SessionManager {
     public static int numberPeopleChatWith;
     public static int numberGroupChatWith;
+    public List<Integer> onlineUsers;
+
     // implement Bill Pugh singleton class
     private Customer currentUser;
 
@@ -25,11 +29,8 @@ public class SessionManager {
     // Set the current user
     public void setCurrentUser(Customer user) {
         this.currentUser = user;
-    }
-
-    // Clear the session (e.g., during logout)
-    public void clearSession() {
-        currentUser = null;
+        numberPeopleChatWith = 0;
+        numberGroupChatWith = 0;
     }
 
     private static class SessionManagerHelper {

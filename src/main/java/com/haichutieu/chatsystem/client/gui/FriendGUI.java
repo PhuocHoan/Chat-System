@@ -18,9 +18,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
-
 
 import java.util.List;
 import java.util.Set;
@@ -30,15 +28,7 @@ import static javafx.geometry.VPos.*;
 public class FriendGUI {
 
     private static FriendGUI instance;
-
-    public FriendGUI() {
-        instance = this;
-    }
-
-    public static FriendGUI getInstance() {
-        return instance;
-    }
-
+    private final ProgressIndicator friendListLoading = new ProgressIndicator();
     @FXML
     private GridPane screen;
     @FXML
@@ -54,24 +44,24 @@ public class FriendGUI {
     @FXML
     private Button userSearchButton;
 
-    private final ProgressIndicator friendListLoading = new ProgressIndicator();
-
     private ObservableList<Customer> friends = null;
     private FilteredList<Customer> filteredFriends;
     private Set<Integer> onlineFriendIDs;
 
+    public FriendGUI() {
+        instance = this;
+    }
+
+    public static FriendGUI getInstance() {
+        return instance;
+    }
+
     @FXML
     public void initialize() {
-        screen.setPrefWidth(Screen.getPrimary().getVisualBounds().getWidth());
-        screen.setPrefHeight(Screen.getPrimary().getVisualBounds().getHeight());
-
-        if (friends == null) {
-            // Fetch for initial friend list
-            friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
-            friendContainer.getChildren().add(friendListLoading);
-            long userId = SessionManager.getInstance().getCurrentUser().getId();
-            SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
-        }
+        friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+        friendContainer.getChildren().add(friendListLoading);
+        int userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
     }
 
     @FXML
@@ -85,48 +75,23 @@ public class FriendGUI {
     }
 
     public void onReceiveFriendList(List<Customer> friendList, Set<Integer> onlineFriends) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                if (friendList.isEmpty()) {
-                    friendContainer.getChildren().remove(friendListLoading);
-                    friendContainer.getChildren().add(new Label("You have no friends yet."));
-                    return;
-                }
-
-                friends = FXCollections.observableArrayList(friendList);
-                filteredFriends = new FilteredList<>(friends, p -> true);
-                onlineFriendIDs = onlineFriends;
-
-                // Initialize ChoiceBox
-                statusFilter.setItems(FXCollections.observableArrayList("All", "Online", "Offline"));
-                statusFilter.setValue("All");
-
-                // Bind ChoiceBox and TextField to FilteredList
-                friendSearchField.textProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
-                statusFilter.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
-
-                displayFriends();
+        Platform.runLater(() -> {
+            if (friendList.isEmpty()) {
+                friendContainer.getChildren().remove(friendListLoading);
+                friendContainer.getChildren().add(new Label("You have no friends yet."));
+                return;
             }
+            friends = FXCollections.observableArrayList(friendList);
+            filteredFriends = new FilteredList<>(friends, p -> true);
+            onlineFriendIDs = onlineFriends;
+            // Initialize ChoiceBox
+            statusFilter.setItems(FXCollections.observableArrayList("All", "Online", "Offline"));
+            statusFilter.setValue("All");
+            // Bind ChoiceBox and TextField to FilteredList
+            friendSearchField.textProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
+            statusFilter.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
+            displayFriends();
         });
-    }
-
-    public void onUserOffline(int userID) {
-        if (onlineFriendIDs.contains(userID)) {
-            onlineFriendIDs.remove(userID);
-            displayFriends();
-        }
-    }
-
-    public void onUserOnline(int userID) {
-        if (friends.stream().noneMatch(f -> f.getId() == userID)) {
-            return;
-        }
-
-        if (!onlineFriendIDs.contains(userID)) {
-            onlineFriendIDs.add(userID);
-            displayFriends();
-        }
     }
 
     public void onSendFriendRequest(boolean success) {
@@ -330,7 +295,7 @@ public class FriendGUI {
         grid.add(addedMemberLabel, 0, 2);
         ObservableList<Customer> addedMembersList = FXCollections.observableArrayList();
         addedMembersList.add(friend);
-        ListView<String> addedMembers = new ListView<String>();
+        ListView<String> addedMembers = new ListView<>();
         addedMembers.getItems().add(friend.getName());
         grid.add(addedMembers, 0, 3, 2, 1);
         Button addMemberButton = new Button("Remove");

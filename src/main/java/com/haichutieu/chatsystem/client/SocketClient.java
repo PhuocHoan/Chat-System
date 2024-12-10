@@ -1,10 +1,8 @@
 package com.haichutieu.chatsystem.client;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.haichutieu.chatsystem.client.bus.AuthController;
+import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import com.haichutieu.chatsystem.client.bus.FriendsController;
-import com.haichutieu.chatsystem.client.gui.FriendGUI;
-import com.haichutieu.chatsystem.client.gui.LoginGUI;
-import com.haichutieu.chatsystem.client.gui.SignupGUI;
 import com.haichutieu.chatsystem.util.Util;
 
 import java.io.IOException;
@@ -12,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -23,7 +20,7 @@ public class SocketClient {
     private SocketClient() {
         try {
             clientChannel = AsynchronousSocketChannel.open();
-            clientChannel.connect(new InetSocketAddress("localhost", 8000)).get();
+            clientChannel.connect(new InetSocketAddress("localhost", 8080)).get();
             System.out.println("Connected to the server.");
             System.out.println(clientChannel);
             // Start a thread to read messages from the server
@@ -53,29 +50,26 @@ public class SocketClient {
 
     private void readMessages() {
         StringBuilder serverData = new StringBuilder();
-        ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
-        try {
-            while (clientChannel.isOpen()) {
-                Integer bytesRead = clientChannel.read(buffer).get();
-                if (bytesRead == -1) {
-                    System.out.println("Server closed the connection.");
-                    break;
-                }
-                buffer.flip();
-                byte[] bytes = new byte[buffer.limit()];
-                buffer.get(bytes);
-                buffer.clear();
-                String response = new String(bytes);
-                serverData.append(response);
+        Thread.startVirtualThread(() -> {
+            ByteBuffer buffer = ByteBuffer.allocateDirect(1048576); // allocate 1MB
+            try {
+                while (clientChannel.read(buffer).get() != -1) {
+                    buffer.flip();
+                    byte[] bytes = new byte[buffer.limit()];
+                    buffer.get(bytes);
+                    String message = new String(bytes);
+                    buffer.clear();
 
-                String line;
-                while ((line = Util.readLine(serverData)) != null) {
-                    handleMessage(line);
+                    serverData.append(message);
+                    String line;
+                    while ((line = Util.readLine(serverData)) != null) {
+                        handleMessageFromServer(line);
+                    }
                 }
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     public void receiveChunks(List<String> chunkBuffer) {
@@ -116,7 +110,7 @@ public class SocketClient {
         return jsonBuilder.toString();
     }
 
-    private void handleMessage(String messages) {
+    private void handleMessageFromServer(String messages) {
         String[] parts = messages.split(" ", 2);
         String command = parts[0];
         switch (command) {
@@ -126,15 +120,44 @@ public class SocketClient {
             case "LOGIN":
                 handleLogin(parts[1]);
                 break;
+            case "CHAT_LIST":
+                getChatList(parts[1]);
+                break;
+            case "GET_ONLINE_USERS":
+                getOnlineUsers(parts[1]);
+                break;
+            case "GET_MEMBER_CONVERSATION":
+                getMemberConversation(parts[1]);
+                break;
+            case "GET_ALL_MEMBER_CONVERSATION":
+                getAllMemberConversation(parts[1]);
+                break;
+//            case "GET_MEMBER_CONVERSATION_ADMIN":
+//                getMemberConversationAdmin(parts[1]);
+//                break;
+            case "GET_MESSAGE_CONVERSATION":
+                getMessageConversation(parts[1]);
+                break;
+            case "UPDATE_STATUS_CONVERSATION":
+                updateStatusConversation(parts[1]);
+                break;
+            case "MESSAGE":
+                handleMessage(parts[1]);
+                break;
+            case "REMOVE_MESSAGE_ME":
+                removeMessageMe(parts[1]);
+                break;
+            case "REMOVE_MESSAGE_ALL":
+                removeMessageAll(parts[1]);
+                break;
+            case "REMOVE_ALL_MESSAGE_ME":
+                removeAllMessageMe(parts[1]);
+                break;
             case "OFFLINE":
                 handleOffline(parts[1]);
                 break;
             case "GET_FRIEND_LIST":
-                try {
-                    FriendsController.fetchFriendList(parts[1]);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
+                FriendsController.fetchFriendList(parts[1]);
                 break;
             case "SEARCH_USER":
                 FriendsController.handleUserSearch(parts[1]);
@@ -155,15 +178,67 @@ public class SocketClient {
     }
 
     private void handleRegister(String message) {
-        SignupGUI.getInstance().registerResult(message);
+        AuthController.handleRegister(message);
     }
 
     private void handleLogin(String message) {
-        LoginGUI.getInstance().loginResult(message);
+        AuthController.handleLogin(message);
+    }
+
+    private void getChatList(String message) {
+        ChatAppController.handleChatList(message);
+    }
+
+    private void getOnlineUsers(String message) {
+        ChatAppController.handleOnlineUsers(message);
+    }
+
+    private void getMemberConversation(String message) {
+        ChatAppController.handleMemberConversation(message);
+    }
+
+    private void getAllMemberConversation(String message) {
+        ChatAppController.handleAllMemberConversation(message);
+    }
+
+//    private void getMemberConversationAdmin(String message) {
+//        ChatAppController.handleMemberConversationAdminServer(message);
+//    }
+
+    private void getMessageConversation(String message) {
+        ChatAppController.handleMessageConversation(message);
+    }
+
+    private void updateStatusConversation(String message) {
+        System.out.println(message);
+    }
+
+    private void handleMessage(String message) {
+        ChatAppController.receiveMessage(message);
+    }
+
+    private void removeMessageMe(String message) {
+        System.out.println(message);
+    }
+
+    private void removeMessageAll(String message) {
+        ChatAppController.handleRemoveMessageAll(message);
+    }
+
+    private void removeAllMessageMe(String message) {
+        System.out.println(message);
     }
 
     private void handleOffline(String message) {
-        FriendGUI.getInstance().onUserOffline(Integer.parseInt(message.split(" ")[1]));
+        System.out.println(message);
+    }
+
+    private void handleGetFriendList(String message) {
+        FriendsController.fetchFriendList(message);
+    }
+
+    private void handleUnfriend(String message) {
+        FriendsController.handleUnfriend(message);
     }
 
     private static class SocketClientHelper {
