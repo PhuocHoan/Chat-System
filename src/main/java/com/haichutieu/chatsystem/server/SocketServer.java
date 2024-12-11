@@ -1,10 +1,12 @@
 package com.haichutieu.chatsystem.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haichutieu.chatsystem.dto.UserLoginTime;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
 import com.haichutieu.chatsystem.server.dal.FriendsService;
+import com.haichutieu.chatsystem.server.dal.HistoryService;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
 import org.mindrot.jbcrypt.BCrypt;
@@ -73,35 +75,29 @@ public class SocketServer {
 
                     String line;
                     while ((line = Util.readLine(clientData)) != null) {
+                        System.out.println("[SERVER]: Received " + line);
                         String response = processInput(line, clientChannel);
                         if (response != null) {
                             if (response.getBytes().length <= bufferSize) {
+                                System.out.println("[SERVER]: Sending " + response);
                                 clientChannel.write(ByteBuffer.wrap((response + "\n").getBytes())).get();
                             } else {
                                 splitIntoChunks(response).forEach(chunk -> {
-                                    ByteBuffer responseBuffer = ByteBuffer.wrap(chunk.getBytes());
-                                    System.out.println("[SERVER] Sending: " + new String(responseBuffer.array()));
-                                    clientChannel.write(responseBuffer, responseBuffer, new CompletionHandler<Integer, ByteBuffer>() {
-                                        @Override
-                                        public void completed(Integer result, ByteBuffer attachment) {
-                                            if (attachment.hasRemaining()) {
-                                                System.out.println("[SERVER] Sending: " + new String(attachment.array()));
-                                                clientChannel.write(attachment, attachment, this);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void failed(Throwable exc, ByteBuffer attachment) {
-                                            exc.printStackTrace();
-                                        }
-                                    });
+                                    try {
+                                        System.out.println("[SERVER]: Sending " + chunk);
+                                        clientChannel.write(ByteBuffer.wrap(chunk.getBytes())).get();
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 });
+                                clientChannel.write(ByteBuffer.wrap(("\n").getBytes())).get();
                             }
                         }
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         });
     }
@@ -143,6 +139,18 @@ public class SocketServer {
 //            case "GROUP_MESSAGE" -> handleGroupMessage(parts);
             case "OFFLINE" -> // user exits the app or logs out
                     handleOffline(content, clientChannel);
+
+            // Admin commands
+            case "LOGIN_ADMIN" -> handleAdminLogin(content);
+            case "FETCH_ACCOUNT_LIST" -> handleFetchAccountList();
+            case "ADD_ACCOUNT" -> handleAddAccount(content);
+            case "DELETE_ACCOUNT" -> handleDeleteAccount(content);
+            case "EDIT_ACCOUNT" -> handleEditAccount(content);
+//            case "TOGGLE_ACCOUNT_STATUS" -> handleToggleAccountStatus(content);
+//            case "CHANGE_PASSWORD" -> handleChangePassword(content);
+            case "LOGIN_HISTORY" -> handleLoginHistory(content);
+//            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
+//            case "SPAM_LIST" -> handleSpamList(content);
             default -> "ERROR Unknown command";
         };
     }
@@ -365,8 +373,76 @@ public class SocketServer {
 //        });
 //    }
 
+    private String handleAdminLogin(String content) {
+        String[] parts = content.split(" ");
+        String username = parts[0];
+        String password = parts[1];
+        if (username.equals("admin") && password.equals("admin")) {
+            return "LOGIN_ADMIN OK";
+        }
+        return "LOGIN_ADMIN INCORRECT";
+    }
+
+    private String handleFetchAccountList() {
+        List<Customer> allAccounts = CustomerService.fetchAllCustomers();
+        return "FETCH_ACCOUNT_LIST OK " + Util.serializeObject(allAccounts);
+    }
+
     private static class SocketServerHelper {
         private static final SocketServer INSTANCE = new SocketServer();
+    }
+
+    private String handleAddAccount(String content) {
+        Customer cus = null;
+        cus = Util.deserializeObject(content, Customer.class);
+
+        if (cus == null) {
+            return "ADD_ACCOUNT ERROR";
+        }
+
+        CustomerService.addCustomer(cus);
+        return "ADD_ACCOUNT OK " + content;
+    }
+
+    private String handleDeleteAccount(String content) {
+        int id = Integer.parseInt(content);
+        if (!CustomerService.deleteCustomer(id)) {
+            return "DELETE_ACCOUNT ERROR " + id;
+        }
+        return "DELETE_ACCOUNT OK " + id;
+    }
+
+    private String handleEditAccount(String content) {
+        Customer cus = null;
+        cus = Util.deserializeObject(content, Customer.class);
+
+        if (cus == null) {
+            return "EDIT_ACCOUNT ERROR";
+        }
+
+        if (!CustomerService.editCustomer(cus)) {
+            return "EDIT_ACCOUNT ERROR";
+        }
+
+        return "EDIT_ACCOUNT OK " + content;
+    }
+
+    private String handleLoginHistory(String content) {
+        if (content.startsWith("ALL")) {
+            List<UserLoginTime> loginTimes = HistoryService.fetchAllLoginHistory();
+            if (loginTimes == null) {
+                return "LOGIN_HISTORY ALL ERROR";
+            }
+            return "LOGIN_HISTORY ALL OK " + Util.serializeObject(loginTimes);
+        } else if (content.startsWith("USER")) {
+            int id = Integer.parseInt(content.split(" ")[1]);
+            List<LoginTime> loginTimes = HistoryService.fetchUserLoginHistory(id);
+            if (loginTimes == null) {
+                return "LOGIN_HISTORY USER ERROR";
+            }
+            return "LOGIN_HISTORY USER OK " + Util.serializeObject(loginTimes);
+        }
+        return "LOGIN_HISTORY ERROR Incorrect command";
     }
 }
 

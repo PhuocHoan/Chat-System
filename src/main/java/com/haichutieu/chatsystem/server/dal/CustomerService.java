@@ -3,9 +3,11 @@ package com.haichutieu.chatsystem.server.dal;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
 import com.haichutieu.chatsystem.server.util.HibernateUtil;
+import jakarta.persistence.EntityManager;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class CustomerService {
@@ -21,6 +23,43 @@ public class CustomerService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static boolean deleteCustomer(int id) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Customer customer = session.get(Customer.class, id);
+            if (customer != null) {
+                session.delete(customer);
+            }
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+                return false;
+            }
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
+    public static boolean editCustomer(Customer customer) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(customer);
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+                return false;
+            }
+            e.printStackTrace();
+        }
+
+        return true;
     }
 
     public static Customer getCustomerByID(int userID) {
@@ -82,5 +121,14 @@ public class CustomerService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static List<Customer> fetchAllCustomers() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("select C from Customer C", Customer.class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

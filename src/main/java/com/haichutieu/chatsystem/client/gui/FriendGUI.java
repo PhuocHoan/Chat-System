@@ -65,13 +65,11 @@ public class FriendGUI {
         screen.setPrefWidth(Screen.getPrimary().getVisualBounds().getWidth());
         screen.setPrefHeight(Screen.getPrimary().getVisualBounds().getHeight());
 
-        if (friends == null) {
-            // Fetch for initial friend list
-            friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
-            friendContainer.getChildren().add(friendListLoading);
-            long userId = SessionManager.getInstance().getCurrentUser().getId();
-            SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
-        }
+        // Fetch for initial friend list
+        friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+        friendContainer.getChildren().add(friendListLoading);
+        long userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
     }
 
     @FXML

@@ -14,10 +14,10 @@ public class AdminApp extends Application {
             SceneController.setPrimaryStage(primaryStage);
             SceneController.initScenes();
             SceneController.primaryStage.setTitle("Chat System");
-            SceneController.setScene("adminPanel");
-            SceneController.primaryStage.setMinHeight(770);
-            SceneController.primaryStage.setMinWidth(1280);
-            SceneController.primaryStage.setMaximized(true);
+            SceneController.setScene("adminLogin");
+            SceneController.primaryStage.setResizable(false);
+            SceneController.primaryStage.setHeight(500);
+            SceneController.primaryStage.setWidth(350);
             SceneController.primaryStage.show();
         } catch (IOException e) {
             e.printStackTrace(); // Handle connection error (e.g., show an alert)
