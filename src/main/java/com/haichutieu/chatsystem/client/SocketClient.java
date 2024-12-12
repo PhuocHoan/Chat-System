@@ -1,16 +1,16 @@
 package com.haichutieu.chatsystem.client;
 
+import com.haichutieu.chatsystem.client.bus.AdminController;
 import com.haichutieu.chatsystem.client.bus.AuthController;
 import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import com.haichutieu.chatsystem.client.bus.FriendsController;
+import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.util.Util;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class SocketClient {
@@ -53,7 +53,7 @@ public class SocketClient {
     private void readMessages() {
         StringBuilder serverData = new StringBuilder();
         Thread.startVirtualThread(() -> {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(1048576); // allocate 1MB
+            ByteBuffer buffer = ByteBuffer.allocateDirect(1024); // allocate 1MB
             try {
                 while (clientChannel.read(buffer).get() != -1) {
                     buffer.flip();
@@ -74,44 +74,6 @@ public class SocketClient {
         });
     }
 
-    public void receiveChunks(List<String> chunkBuffer) {
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        clientChannel.read(buffer, null, new CompletionHandler<Integer, Void>() {
-            @Override
-            public void completed(Integer result, Void attachment) {
-                buffer.flip();
-                String chunk = new String(buffer.array(), 0, buffer.limit());
-                // Continue reading chunks until the end
-                if (!chunk.contains("END")) {
-                    System.out.println("Received chunk: " + chunk);
-                    chunkBuffer.add(chunk); // Store the received chunk
-                    buffer.clear();
-                    receiveChunks(chunkBuffer);
-                }
-                // Remove "END" from the last chunk and there is no more to read
-                else {
-                    chunkBuffer.add(chunk.replace(" END", ""));
-                    buffer.clear();
-                }
-            }
-
-            @Override
-            public void failed(Throwable exc, Void attachment) {
-                exc.printStackTrace();
-            }
-        });
-
-    }
-
-    public String reassembleChunks(List<String> rawChunks) {
-        StringBuilder jsonBuilder = new StringBuilder();
-        for (String chunk : rawChunks) {
-            jsonBuilder.append(chunk);
-        }
-
-        return jsonBuilder.toString();
-    }
-
     public void handleLogout() {
         try {
             clientChannel.close();
@@ -125,6 +87,7 @@ public class SocketClient {
         String[] parts = messages.split(" ", 2);
         String command = parts[0];
         switch (command) {
+            // Commands for USERS
             case "REGISTER":
                 handleRegister(parts[1]);
                 break;
@@ -184,6 +147,26 @@ public class SocketClient {
                 break;
             case "BLOCK":
                 FriendsController.handleBlock(parts[1]);
+                break;
+
+//            // Commands for ADMIN
+            case "LOGIN_ADMIN":
+                AdminController.handleLoginAdmin(parts[1]);
+                break;
+            case "FETCH_ACCOUNT_LIST":
+                AdminController.fetchAccountList(parts[1]);
+                break;
+            case "ADD_ACCOUNT":
+                UserManagement.getInstance().onAddNewAccount(parts[1]);
+                break;
+            case "DELETE_ACCOUNT":
+                UserManagement.getInstance().onDeleteAccount(parts[1]);
+                break;
+            case "EDIT_ACCOUNT":
+                UserManagement.getInstance().onEditAccount(parts[1]);
+                break;
+            case "LOGIN_HISTORY":
+                AdminController.handleLoginHistory(parts[1]);
                 break;
         }
     }

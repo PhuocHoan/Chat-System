@@ -18,13 +18,13 @@ public class SceneController {
     public static void initScenes() throws IOException {
         addScene("login", "gui/login.fxml", "../stylesheets/style.css");
         addScene("register", "gui/signup.fxml", "../stylesheets/style.css");
+//        addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
+        addScene("adminLogin", "gui/adminPanel/adminLogin.fxml", "../stylesheets/adminPanel.css");
     }
 
     public static void setPrimaryStage(Stage stage) {
         primaryStage = stage;
-        primaryStage.setOnCloseRequest(e -> {
-            ChatAppController.offlineUser();
-        });
+        primaryStage.setOnCloseRequest(e -> ChatAppController.offlineUser());
     }
 
     public static void setScene(String name) {

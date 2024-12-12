@@ -19,10 +19,12 @@
 
 #btn-default {
     -fx-background-color: -fx-main-background;
+    -fx-text-fill: black;
 }
 
 #btn-chosen {
     -fx-background-color: -fx-bg-blue;
+    -fx-text-fill: white;
 }
 
 #btn-logout {

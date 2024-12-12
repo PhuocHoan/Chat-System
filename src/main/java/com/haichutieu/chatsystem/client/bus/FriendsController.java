@@ -2,6 +2,7 @@ package com.haichutieu.chatsystem.client.bus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
+import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.util.Util;
 
@@ -10,19 +11,43 @@ import java.util.Set;
 
 public class FriendsController {
     public static void fetchFriendList(String message) {
-        List<Customer> friends = null;
+        List<Customer> friends;
         Set<Integer> onlineFriendIds = null;
 
-        if (!message.startsWith("ERROR")) {
-            String[] parts = message.split("END");
-            String[] friendsJson = parts[0].trim().split(" ", 2);
-            String[] onlineUserJson = parts[1].trim().split(" ", 2);
-            friends = Util.deserializeObject(friendsJson[1], new TypeReference<>() {
-            });
-            onlineFriendIds = Util.deserializeObject(onlineUserJson[1], new TypeReference<>() {
-            });
+        String[] parts = message.split(" ", 3);
+
+        if (parts[0].equals("ADMIN")) {
+            if (parts[1].equals("ERROR")) {
+                UserManagement.getInstance().onReceiveFriendList(false, 0, null);
+            } else {
+                int userId = Integer.parseInt(parts[2].split(" ", 2)[0]);
+                String json = parts[2].split(" ", 2)[1];
+                System.out.println(json);
+                try {
+                    friends = Util.deserializeObject(json, new TypeReference<>() {
+                    });
+                    UserManagement.getInstance().onReceiveFriendList(true, userId, friends);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return;
         }
-        FriendGUI.getInstance().onReceiveFriendList(friends, onlineFriendIds);
+
+        if (parts[0].equals("USER")) {
+            if (parts[1].equals("ERROR")) {
+                FriendGUI.getInstance().onReceiveFriendList(false, null);
+            } else {
+                try {
+                    friends = Util.deserializeObject(parts[2], new TypeReference<>() {
+                    });
+                    FriendGUI.getInstance().onReceiveFriendList(true, friends);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
     }
 
     public static void handleUnfriend(String message) {

@@ -6,19 +6,60 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
+import java.util.List;
+
 public class CustomerService {
-    public static void addCustomer(Customer customer) {
+    public static boolean addCustomer(Customer customer) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(customer);
             transaction.commit();
+            return true;
         } catch (Exception e) {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             e.printStackTrace();
+            return false;
         }
+    }
+
+    public static boolean deleteCustomer(int id) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Customer customer = session.get(Customer.class, id);
+            if (customer != null) {
+                session.delete(customer);
+            }
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+                return false;
+            }
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    public static boolean editCustomer(Customer customer) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.merge(customer);
+            transaction.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Loi roi!");
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            return false;
+        }
+        System.out.println("OK roi!");
+        return true;
     }
 
     public static Customer getCustomerByID(int userID) {
@@ -79,5 +120,14 @@ public class CustomerService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static List<Customer> fetchAllCustomers() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("select C from Customer C", Customer.class).list();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
