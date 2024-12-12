@@ -1,7 +1,6 @@
 package com.haichutieu.chatsystem.server.dal;
 
 import com.haichutieu.chatsystem.dto.*;
-import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -13,59 +12,59 @@ public class MessageService {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createNativeQuery("""
                     WITH LatestMessages AS (
-                        SELECT
-                            m.conversation_id,
-                            m.customer_id AS sender_id,
-                            m.message,
-                            m.time,
-                            lm.status
-                        FROM
-                            message m
-                        JOIN (
-                           SELECT DISTINCT ON (m.conversation_id)
-                                m.conversation_id,
-                                m.time AS latest_time,
-                                md.status
-                            FROM message m
-                            JOIN message_display md
-                                ON m.id = md.message_id
-                            WHERE md.customer_id = :customerID
-                            ORDER BY m.conversation_id, m.time DESC
-                        ) lm ON m.time = lm.latest_time
-                    )
-                    SELECT
-                        c.id AS conversation_id,
-                        CASE
-                            WHEN c.is_group = TRUE THEN c.name
-                            ELSE (
-                                SELECT
-                                    cu.name
-                                FROM
-                                    customer cu
-                                JOIN
-                                    conversation_member cm2 ON cu.id = cm2.customer_id
-                                WHERE
-                                    cm2.conversation_id = c.id AND cu.id != :customerID
-                                LIMIT 1
-                            )
-                        END AS conversation_name,
-                        cu_sender.name AS sender_name,
-                        lm.message AS latest_message,
-                        COALESCE(lm.time, c.create_date) AS latest_time,
-                        c.is_group,
-                        COALESCE(lm.status, FALSE) AS is_read
-                    FROM
-                        conversation c
-                    JOIN
-                        conversation_member cm ON c.id = cm.conversation_id
-                    LEFT JOIN
-                        LatestMessages lm ON c.id = lm.conversation_id
-                    LEFT JOIN
-                        customer cu_sender ON lm.sender_id = cu_sender.id
-                    WHERE
-                        cm.customer_id = :customerID
-                    ORDER BY
-                        COALESCE(lm.time, c.create_date);
+                         SELECT
+                             m.conversation_id,
+                             m.customer_id AS sender_id,
+                             m.message,
+                             m.time,
+                             lm.status
+                         FROM
+                             message m
+                         JOIN (
+                            SELECT DISTINCT ON (m.conversation_id)
+                                 m.conversation_id,
+                                 m.time AS latest_time,
+                                 md.status
+                             FROM message m
+                             JOIN message_display md
+                                 ON m.id = md.message_id
+                             WHERE md.customer_id = :customerID
+                             ORDER BY m.conversation_id, m.time DESC
+                         ) lm ON m.time = lm.latest_time
+                     )
+                     SELECT
+                         c.id AS conversation_id,
+                         CASE
+                             WHEN c.is_group = TRUE THEN c.name
+                             ELSE (
+                                 SELECT
+                                     cu.name
+                                 FROM
+                                     customer cu
+                                 JOIN
+                                     conversation_member cm2 ON cu.id = cm2.customer_id
+                                 WHERE
+                                     cm2.conversation_id = c.id AND cu.id != :customerID
+                                 LIMIT 1
+                             )
+                         END AS conversation_name,
+                         cu_sender.name AS sender_name,
+                         lm.message AS latest_message,
+                         lm.time AS latest_time,
+                         c.is_group,
+                         COALESCE(lm.status, FALSE) AS is_read
+                     FROM
+                         conversation c
+                     JOIN
+                         conversation_member cm ON c.id = cm.conversation_id
+                     JOIN
+                         LatestMessages lm ON c.id = lm.conversation_id
+                     LEFT JOIN
+                         customer cu_sender ON lm.sender_id = cu_sender.id
+                     WHERE
+                         cm.customer_id = :customerID
+                     ORDER BY
+                         lm.time;
                     """, ChatList.class).setParameter("customerID", customerID).getResultList();
         } catch (Exception e) {
             e.printStackTrace();

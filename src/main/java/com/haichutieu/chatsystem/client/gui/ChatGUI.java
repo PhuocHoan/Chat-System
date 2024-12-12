@@ -5,6 +5,7 @@ import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.dto.MessageConversation;
+import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -25,6 +26,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.*;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -46,10 +48,6 @@ public class ChatGUI {
     public Map<Long, List<Integer>> memberConversation = new HashMap<>(); // store list of member in all conversation
     public ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
     public ChatList isFocusingConversation;
-    public ObservableList<MessageConversation> searchMessages = FXCollections.observableArrayList();
-
-    @FXML
-    private Button btnSendMessage;
 
     @FXML
     private ImageView avatar;
@@ -76,10 +74,10 @@ public class ChatGUI {
     private Text headerStatus;
 
     @FXML
-    private GridPane mainChatContainer;
+    private VBox rightSideBar;
 
     @FXML
-    private VBox rightSideBar;
+    private StackPane mainChatContainer;
 
     @FXML
     private Text rightSideBarName;
@@ -113,7 +111,6 @@ public class ChatGUI {
         screen.setFocusTraversable(true);
         screen.setOnMouseClicked(event -> screen.requestFocus());
         // Handle the enter key event
-        btnSendMessage.setOnMouseClicked(e -> sendMessage());
         chatField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 sendMessage();
@@ -157,47 +154,78 @@ public class ChatGUI {
             }
         });
 
-        messages.addListener((ListChangeListener<MessageConversation>) change -> {
-            while (change.next()) {
-                if (change.wasRemoved()) {
-                    for (MessageConversation removedItem : change.getRemoved()) {
-                        removeItemFromMessageConversation(removedItem);
+        // search message
+        VBox searchResultsBox = new VBox();
+        ScrollPane searchScrollPane = new ScrollPane(searchResultsBox);
+        searchScrollPane.setVisible(false); // Initially hidden
+
+        searchMessage.textProperty().addListener((observable, oldValue, newValue) -> Platform.runLater(() -> {
+            searchResultsBox.getChildren().clear();
+            if (newValue.isEmpty()) {
+                searchScrollPane.setVisible(false);
+            } else {
+                searchScrollPane.setVisible(true);
+                messages.forEach(message -> {
+                    if (message.message.toLowerCase().contains(newValue.toLowerCase())) {
+                        // create message UI in search scrollpane
+                        Text content = new Text(message.message);
+                        String text = message.message;
+                        if (text.length() > 30) {
+                            text = text.substring(0, 27) + "...";
+                        }
+                        content.setText(text);
+                        content.setFontSmoothingType(FontSmoothingType.LCD);
+                        TextFlow textFlow = new TextFlow(content);
+                        textFlow.setPrefWidth(510);
+                        textFlow.getStyleClass().add("message-search");
+                        textFlow.setPadding(new Insets(10, 10, 10, 10));
+                        Text time = new Text(formatChatTimeStamp(message.time));
+                        HBox.setMargin(time, new Insets(0, 10, 0, 10));
+                        HBox hbox = new HBox(textFlow, time);
+                        hbox.setAlignment(Pos.CENTER_LEFT);
+
+                        hbox.setOnMouseClicked(event -> {
+                            // jump to clicked message
+                            VBox targetMessage = messageVBoxMap.get(message.id);
+                            double scrollPosition = targetMessage.getBoundsInParent().getMinY() / chatArea.getHeight();
+                            chatScrollPane.setVvalue(scrollPosition);
+
+                            // Highlight the target message
+                            targetMessage.setStyle("-fx-background-color: yellow;");
+                            FadeTransition fadeTransition = new FadeTransition(Duration.seconds(1), targetMessage);
+                            fadeTransition.setFromValue(1);
+                            fadeTransition.setToValue(0.8);
+                            fadeTransition.setOnFinished(e -> {
+                                targetMessage.setStyle(null);
+                                targetMessage.setOpacity(1);
+                            }); // Restore original style
+                            fadeTransition.play();
+                            searchScrollPane.setVisible(false); // Hide the searchScrollPane after clicking
+                        });
+                        Text sender = new Text(message.senderName);
+                        VBox vBox = new VBox(sender, hbox);
+                        VBox.setMargin(vBox, new Insets(5, 5, 5, 5));
+                        searchResultsBox.getChildren().add(vBox);
                     }
-                }
-                if (change.wasAdded()) {
-                    for (MessageConversation addedItem : change.getAddedSubList()) {
-                        addItemToMessageConversation(addedItem);
-                    }
-                }
+                });
+            }
+        }));
+
+        searchMessage.setOnMouseClicked(event -> {
+            if (!searchMessage.getText().isEmpty()) {
+                Platform.runLater(() -> searchScrollPane.setVisible(true));
             }
         });
 
-        FilteredList<MessageConversation> filteredMessages = new FilteredList<>(searchMessages, p -> true);
-        searchMessage.textProperty().addListener((observable, oldValue, newValue) -> filteredMessages.setPredicate(message -> {
-            // If filter text is empty, do not display.
-            if (newValue == null || newValue.isEmpty()) {
-                return false;
-            }
-            // Filter by the message
-            String lowerCaseFilter = newValue.toLowerCase();
-            return message.message.toLowerCase().contains(lowerCaseFilter);
-        }));
-        filteredMessages.addListener((ListChangeListener<MessageConversation>) change -> {
-            while (change.next()) {
-                if (change.wasRemoved()) {
-                    for (MessageConversation removedItem : change.getRemoved()) {
-//                        removeItemFromMessageConversation(removedItem);
-                        // remove from message search list
-                    }
-                }
-                if (change.wasAdded()) {
-                    for (MessageConversation addedItem : change.getAddedSubList()) {
-//                        addItemToMessageConversation(addedItem);
-                        // add to message search list
-                    }
-                }
-            }
-        });
+        // Add components to StackPane
+        mainChatContainer.getChildren().add(searchScrollPane);
+
+        // Adjust position and size of searchScrollPane dynamically
+        searchScrollPane.setMaxHeight(300); // Default max height
+        searchScrollPane.setStyle("-fx-background-color: rgba(255, 255, 255, .7); -fx-border-color: gray; -fx-border-width: 1px;");
+        // Position searchScrollPane above the chat content
+        StackPane.setAlignment(searchScrollPane, Pos.TOP_CENTER);
+        StackPane.setMargin(searchScrollPane, new Insets(78, 10, 0, 10)); // Adjust top margin
 
         ChatAppController.getChatList();
 
@@ -253,6 +281,13 @@ public class ChatGUI {
             if (item != null) {
                 chatArea.getChildren().remove(item);
             }
+        });
+    }
+
+    private void removeAllItemFromMessageConversation() {
+        Platform.runLater(() -> {
+            messageVBoxMap.clear();
+            chatArea.getChildren().clear();
         });
     }
 
@@ -402,7 +437,8 @@ public class ChatGUI {
 
     public void getMessageConversation(List<MessageConversation> messagesServer) {
         messages.setAll(messagesServer);
-        searchMessages.setAll(messagesServer);
+        removeAllItemFromMessageConversation();
+        messages.forEach(this::addItemToMessageConversation);
     }
 
     // create a message style from user to others
@@ -447,12 +483,14 @@ public class ChatGUI {
             // if message is not mine then just remove on my side
             ChatAppController.removeMessage(message.id);
             messages.remove(message);
+            removeItemFromMessageConversation(message);
         } else {
             // my message
             if ((System.currentTimeMillis() - message.time.getTime()) / (1000 * 60 * 60 * 24) > 1) {
                 // if message is over 1 day then just remove on my side
                 ChatAppController.removeMessage(message.id);
                 messages.remove(message);
+                removeItemFromMessageConversation(message);
             } else {
                 // remove for all members
                 ChatAppController.removeMessage(message);
@@ -463,6 +501,12 @@ public class ChatGUI {
     void onRemoveAll() {
         ChatAppController.removeAllMessage(isFocusingConversation);
         messages.clear();
+        removeAllItemFromMessageConversation();
+        conversations.remove(isFocusingConversation);
+        Platform.runLater(() -> {
+            mainChatContainer.setVisible(false);
+            rightSideBar.setVisible(false);
+        });
     }
 
     public String formatConversationTimeStamp(Timestamp timestamp) {
@@ -516,6 +560,7 @@ public class ChatGUI {
         }
         addNewConversation(conversation);
         messages.add(message);
+        addItemToMessageConversation(message);
     }
 
     public void removeMessageAll(MessageConversation message) {
@@ -523,7 +568,13 @@ public class ChatGUI {
         if (message.conversation_id == isFocusingConversation.conversationID) {
             // if user is focusing conversation that someone removes message
             messages.removeIf((oldMessage) ->
-                    oldMessage.id == message.id
+                    {
+                        if (oldMessage.id == message.id) {
+                            removeItemFromMessageConversation(message);
+                            return true;
+                        }
+                        return false;
+                    }
             );
         }
     }

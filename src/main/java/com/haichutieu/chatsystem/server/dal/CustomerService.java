@@ -2,7 +2,6 @@ package com.haichutieu.chatsystem.server.dal;
 
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.LoginTime;
-import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;

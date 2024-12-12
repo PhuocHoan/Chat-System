@@ -7,8 +7,8 @@ import com.haichutieu.chatsystem.dto.LoginTime;
 import com.haichutieu.chatsystem.dto.MessageConversation;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.server.dal.FriendsService;
+import com.haichutieu.chatsystem.server.dal.HibernateUtil;
 import com.haichutieu.chatsystem.server.dal.MessageService;
-import com.haichutieu.chatsystem.server.util.HibernateUtil;
 import com.haichutieu.chatsystem.util.Util;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -171,14 +171,10 @@ public class SocketServer {
                 break;
             case "REMOVE_ALL_MESSAGE_ME":
                 return removeAllMessageMe(content);
-//            case "ADD_FRIEND":
-//                return handleAddFriend(parts);
             case "GET_FRIEND_LIST":
                 return handleGetFriendList(content);
             case "UNFRIEND":
                 return handleUnfriend(content);
-//            case "CREATE_GROUP":
-//              return handleCreateGroup(parts);
             case "OFFLINE":
                 return handleOffline(content, clientChannel); // user exit or logout
             default:
@@ -333,19 +329,6 @@ public class SocketServer {
         return "OFFLINE User " + parts[0] + " is offline now";
     }
 
-//    private String handleAddFriend(String[] parts) {
-//        if (parts.length < 3) {
-//            return "ERROR Invalid ADD_FRIEND command\n";
-//        }
-//        String username = parts[1];
-//        String friendUsername = parts[2];
-//        if (!users.containsKey(friendUsername)) {
-//            return "ERROR User does not exist\n";
-//        }
-//        friendships.get(username).add(friendUsername);
-//        return "OK Friend added\n";
-//    }
-
     private void handleMessage(String content) {
         String[] parts = content.split(" END ", 2);
         ChatList conversation;
@@ -483,17 +466,6 @@ public class SocketServer {
         }
         return "BLOCK OK " + blockedID;
     }
-//    private String handleCreateGroup(String[] parts) {
-//        if (parts.length < 3) {
-//            return "ERROR Invalid CREATE_GROUP command\n";
-//        }
-//        String groupName = parts[1];
-//        String[] memberUsernames = parts[2].split(" ");
-//        Set<String> members = new HashSet<>(Arrays.asList(memberUsernames));
-//        Group group = new Group(groupName, members);
-//        groups.put(groupName, group);
-//        return "OK Group created\n";
-//    }
 
     private static class SocketServerHelper {
         private static final SocketServer INSTANCE = new SocketServer();
