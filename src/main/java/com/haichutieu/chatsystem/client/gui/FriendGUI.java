@@ -59,6 +59,7 @@ public class FriendGUI {
     @FXML
     public void initialize() {
         // Fetch for initial friend list
+        onlineFriendIDs = Set.of();
         friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         friendContainer.getChildren().add(friendListLoading);
         long userId = SessionManager.getInstance().getCurrentUser().getId();
@@ -75,16 +76,31 @@ public class FriendGUI {
         SceneController.setScene("chat");
     }
 
-    public void onReceiveFriendList(List<Customer> friendList, Set<Integer> onlineFriends) {
+    public void onReceiveFriendList(boolean success, List<Customer> friendList) {
         Platform.runLater(() -> {
+            if (!success) {
+                friendContainer.getChildren().remove(friendListLoading);
+                friendContainer.getChildren().add(new Label("Failed to fetch friend list."));
+                return;
+            }
+
             if (friendList.isEmpty()) {
                 friendContainer.getChildren().remove(friendListLoading);
                 friendContainer.getChildren().add(new Label("You have no friends yet."));
                 return;
             }
+
             friends = FXCollections.observableArrayList(friendList);
             filteredFriends = new FilteredList<>(friends, p -> true);
-            onlineFriendIDs = onlineFriends;
+
+            System.out.println("This is it");
+            for (int id : SessionManager.getInstance().onlineUsers) {
+                System.out.println("This is it " + id);
+                if (friends.stream().anyMatch(f -> f.getId() == id)) {
+                    this.onlineFriendIDs.add(id);
+                }
+            }
+
             // Initialize ChoiceBox
             statusFilter.setItems(FXCollections.observableArrayList("All", "Online", "Offline"));
             statusFilter.setValue("All");
@@ -161,7 +177,7 @@ public class FriendGUI {
         friendContainer.getChildren().clear();
 
         for (Customer customer : filteredFriends) {
-            GridPane friendPane = createFriendCard(customer, onlineFriendIDs.contains(customer.getId()));
+            GridPane friendPane = createFriendCard(customer, this.onlineFriendIDs.contains(customer.getId()));
             friendContainer.getChildren().add(friendPane);
         }
     }

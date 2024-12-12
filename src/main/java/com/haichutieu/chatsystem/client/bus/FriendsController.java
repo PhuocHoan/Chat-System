@@ -1,6 +1,7 @@
 package com.haichutieu.chatsystem.client.bus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.dto.Customer;
@@ -15,6 +16,7 @@ public class FriendsController {
         Set<Integer> onlineFriendIds = null;
 
         String[] parts = message.split(" ", 3);
+        ObjectMapper mapper = new ObjectMapper();
 
         if(parts[0].equals("ADMIN")) {
             if (parts[1].equals("ERROR")) {
@@ -23,21 +25,30 @@ public class FriendsController {
                 int userId = Integer.parseInt(parts[2].split(" ", 2)[0]);
                 String json = parts[2].split(" ", 2)[1];
                 System.out.println(json);
-                friends = mapper.readValue(json, new TypeReference<List<Customer>>() {
-                });
-                UserManagement.getInstance().onReceiveFriendList(true, userId, friends);
+                try {
+                    friends = mapper.readValue(json, new TypeReference<List<Customer>>() {
+                    });
+                    UserManagement.getInstance().onReceiveFriendList(true, userId, friends);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             return;
         }
 
         if(parts[0].equals("USER")) {
-            if (!message.startsWith("ERROR")) {
-                String[] friendsJson = parts[0].trim().split(" ", 2);
-                String[] onlineUserJson = parts[1].trim().split(" ", 2);
-                friends = mapper.readValue(friendsJson[1], new TypeReference<List<Customer>>() {
-                });
+            if (parts[1].equals("ERROR")) {
+                FriendGUI.getInstance().onReceiveFriendList(false, null);
+            } else {
+                try {
+                    friends = mapper.readValue(parts[2], new TypeReference<List<Customer>>() {
+                    });
+                    FriendGUI.getInstance().onReceiveFriendList(true, friends);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-            FriendGUI.getInstance().onReceiveFriendList(friends, onlineFriendIds);
+
         }
     }
 

@@ -175,7 +175,7 @@ public class SocketServer {
                 return handleUnfriend(content);
             case "OFFLINE":
                 return handleOffline(content, clientChannel); // user exit or logout
-            
+
             // Admin commands
             case "LOGIN_ADMIN":
                 return handleAdminLogin(content);
@@ -183,7 +183,7 @@ public class SocketServer {
                 return handleFetchAccountList();
             case "ADD_ACCOUNT":
                 return handleAddAccount(content);
-            case "DELETE_ACCOUNT": 
+            case "DELETE_ACCOUNT":
                 return handleDeleteAccount(content);
             case "EDIT_ACCOUNT":
                 return handleEditAccount(content);
@@ -193,7 +193,7 @@ public class SocketServer {
                 return handleLoginHistory(content);
 //            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
 //            case "SPAM_LIST" -> handleSpamList(content);
-            
+
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
@@ -448,7 +448,7 @@ public class SocketServer {
             return "GET_FRIEND_LIST " + parts[0] + " ERROR Failed to fetch friends";
         }
 
-        return "GET_FRIEND_LIST " + parts[0] + " OK " + (parts[0].equals("ADMIN") ? id : "") + " " + Util.serializeObject(friends);
+        return "GET_FRIEND_LIST " + parts[0] + " OK" + (parts[0].equals("ADMIN") ? " " + id : "") + " " + Util.serializeObject(friends);
     }
 
     private String handleUnfriend(String message) {
@@ -513,7 +513,8 @@ public class SocketServer {
 
     private String handleAddAccount(String content) {
         Customer cus = null;
-        cus = Util.deserializeObject(content, Customer.class);
+        cus = Util.deserializeObject(content, new TypeReference<Customer>() {
+        });
 
         if (CustomerService.getCustomerByUsername(cus.getUsername()) != null) {
             return "ADD_ACCOUNT EXISTS Username already exists!";
@@ -541,7 +542,8 @@ public class SocketServer {
 
     private String handleEditAccount(String content) {
         Customer cus = null;
-        cus = Util.deserializeObject(content, Customer.class);
+        cus = Util.deserializeObject(content, new TypeReference<Customer>() {
+        });
 
         Customer checkCus = CustomerService.getCustomerByUsername(cus.getUsername());
         if (checkCus != null && checkCus.getId() != cus.getId()) {

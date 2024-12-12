@@ -1,5 +1,6 @@
 package com.haichutieu.chatsystem.client.gui.adminPanel;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
@@ -311,7 +312,8 @@ public class UserManagement {
     public void onEditAccount(String message) {
         Platform.runLater(() -> {
             if (message.startsWith("OK")) {
-                Customer updatedAccount = Util.deserializeObject(message.split(" ", 2)[1], Customer.class);
+                Customer updatedAccount = Util.deserializeObject(message.split(" ", 2)[1], new TypeReference<Customer>() {
+                });
                 accountList.replaceAll(account -> {
                     if (account.getId() == updatedAccount.getId()) {
                         return updatedAccount;
@@ -452,7 +454,8 @@ public class UserManagement {
     public void onAddNewAccount(String message) {
         Platform.runLater(() -> {
             if (message.startsWith("OK")) {
-                accountList.add(Util.deserializeObject(message.split(" ", 2)[1], Customer.class));
+                accountList.add(Util.deserializeObject(message.split(" ", 2)[1], new TypeReference<Customer>() {
+                }));
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Add New Account");
                 alert.setContentText("Account added successfully.");
@@ -546,7 +549,7 @@ public class UserManagement {
             friendsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
             TableColumn<Customer, Integer> userIdColumn = new TableColumn<>("UserID");
-            userIdColumn.setCellValueFactory(new PropertyValueFactory<>("customerID"));
+            userIdColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
             userIdColumn.setStyle( "-fx-alignment: BASELINE_CENTER;");
             friendsTable.getColumns().add(userIdColumn);
 
