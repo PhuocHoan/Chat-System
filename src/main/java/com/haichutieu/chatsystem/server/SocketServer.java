@@ -85,23 +85,13 @@ public class SocketServer {
                                 clientChannel.write(ByteBuffer.wrap((response + "\n").getBytes())).get();
                             } else {
                                 splitIntoChunks(response).forEach(chunk -> {
-                                    ByteBuffer responseBuffer = ByteBuffer.wrap(chunk.getBytes());
-                                    System.out.println("[SERVER] Sending: " + new String(responseBuffer.array()));
-                                    clientChannel.write(responseBuffer, responseBuffer, new CompletionHandler<>() {
-                                        @Override
-                                        public void completed(Integer result, ByteBuffer attachment) {
-                                            if (attachment.hasRemaining()) {
-                                                System.out.println("[SERVER] Sending: " + new String(attachment.array()));
-                                                clientChannel.write(attachment, attachment, this);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void failed(Throwable exc, ByteBuffer attachment) {
-                                            exc.printStackTrace();
-                                        }
-                                    });
+                                    try {
+                                        clientChannel.write(ByteBuffer.wrap(chunk.getBytes())).get();
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 });
+                                clientChannel.write(ByteBuffer.wrap(("\n").getBytes())).get();
                             }
                         }
                     }
@@ -151,8 +141,6 @@ public class SocketServer {
                 return getChatList(content);
             case "GET_ONLINE_USERS":
                 return getOnlineUsers();
-            case "GET_MEMBER_CONVERSATION":
-                return getMemberConversation(content);
             case "GET_ALL_MEMBER_CONVERSATION":
                 return getAllMemberConversation(content);
             case "GET_MEMBER_CONVERSATION_ADMIN":
@@ -176,7 +164,8 @@ public class SocketServer {
             case "UNFRIEND":
                 return handleUnfriend(content);
             case "OFFLINE":
-                return handleOffline(content, clientChannel); // user exit or logout
+                handleOffline(content, clientChannel); // user exit or logout
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
@@ -230,6 +219,14 @@ public class SocketServer {
         String customerContent = Util.serializeObject(customer);
 
         onlineUsers.put(customer.getId(), clientChannel);
+        String message = "ONLINE " + customer.getId();
+        onlineUsers.forEach((userID, channel) -> {
+            try {
+                channel.write(ByteBuffer.wrap((message + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
         return "REGISTER " + customerContent + " END User " + customer.getUsername() + " is online now";
     }
 
@@ -252,6 +249,10 @@ public class SocketServer {
             return "LOGIN ERROR The username or password you entered is incorrect.";
         }
 
+        if (customer.getIsLock()) {
+            return "LOGIN ERROR This account is locked.";
+        }
+
         if (onlineUsers.containsKey(customer.getId())) {
             return "LOGIN ERROR User is already online";
         }
@@ -264,6 +265,15 @@ public class SocketServer {
 
         CustomerService.addLoginCustomer(loginTime);
         onlineUsers.put(customer.getId(), clientChannel);
+        String message = "ONLINE " + customer.getId();
+        onlineUsers.forEach((userID, channel) -> {
+            try {
+                channel.write(ByteBuffer.wrap((message + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         return "LOGIN " + customerContent + " END User " + customer.getUsername() + " is online now"; // END is defined as the end of the data sending
     }
 
@@ -276,23 +286,11 @@ public class SocketServer {
         return "GET_ONLINE_USERS " + Util.serializeObject(onlineUsers.keySet());
     }
 
-    private String getMemberConversation(String user) {
-        String[] parts = user.split(" ", 2);
-        var memberConversation = MessageService.getMemberConversationUser(Long.parseLong(parts[0]));
-        return "GET_MEMBER_CONVERSATION " + parts[0] + " " + Util.serializeObject(memberConversation);
-    }
-
     private String getAllMemberConversation(String user) {
-        String[] parts = user.split(" ", 2);
-        List<Long> conversationIDs;
-        try {
-            conversationIDs = Util.deserializeObject(parts[0], new TypeReference<>() {
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        int userID = Integer.parseInt(user);
+        List<Long> conversationIDs = MessageService.getAllConversation(userID);
         Map<Long, List<Integer>> memberConversations = new HashMap<>();
-        conversationIDs.forEach(conversationID -> memberConversations.put(conversationID, MessageService.getMemberConversationUser(conversationID, Integer.parseInt(parts[1]))));
+        conversationIDs.forEach(conversationID -> memberConversations.put(conversationID, MessageService.getMemberConversationUser(conversationID, userID)));
         return "GET_ALL_MEMBER_CONVERSATION " + Util.serializeObject(memberConversations);
     }
 
@@ -313,20 +311,27 @@ public class SocketServer {
         return "UPDATE_STATUS_CONVERSATION Update status conversation successfully";
     }
 
-    private String handleOffline(String user, AsynchronousSocketChannel clientChannel) {
+    private void handleOffline(String user, AsynchronousSocketChannel clientChannel) {
         try {
             clientChannel.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         if (user.equals("null")) {
-            return null;
+            return;
         }
         String[] parts = user.split(" ", 4);
         int id = Integer.parseInt(parts[1]);
         onlineUsers.remove(id);
         CustomerService.updateLogoutCustomer(id, Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
-        return "OFFLINE User " + parts[0] + " is offline now";
+        String message = "OFFLINE " + id;
+        onlineUsers.forEach((userID, channel) -> {
+            try {
+                channel.write(ByteBuffer.wrap((message + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void handleMessage(String content) {

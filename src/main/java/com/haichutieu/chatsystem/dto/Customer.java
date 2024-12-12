@@ -112,7 +112,7 @@ public class Customer {
         this.createDate = createDate;
     }
 
-    public boolean isIsLock() {
+    public boolean getIsLock() {
         return isLock;
     }
 

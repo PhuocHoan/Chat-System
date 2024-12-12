@@ -27,6 +27,7 @@ public class ChatAppController {
         }
     }
 
+    // get all online users at the first time user login successfully
     public static void getOnlineUsers() {
         SocketClient.getInstance().sendMessages("GET_ONLINE_USERS null");
     }
@@ -40,27 +41,9 @@ public class ChatAppController {
         }
     }
 
-    // for user, get member for 1 conversation
-    public static void getMemberConversation(long conversationID) {
-        SocketClient.getInstance().sendMessages("GET_MEMBER_CONVERSATION " + conversationID + " " + SessionManager.getInstance().getCurrentUser().getId());
-    }
-
-    // for user
-    public static void handleMemberConversation(String message) {
-        String[] parts = message.split(" ", 2);
-        List<Integer> members;
-        try {
-            members = Util.deserializeObject(parts[1], new TypeReference<>() {
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        ChatGUI.getInstance().getMemberConversation(Long.parseLong(parts[0]), members);
-    }
-
     // get member for all conversation
-    public static void getAllMemberConversation(List<Long> conversationID) {
-        SocketClient.getInstance().sendMessages("GET_ALL_MEMBER_CONVERSATION " + Util.serializeObject(conversationID) + " " + SessionManager.getInstance().getCurrentUser().getId());
+    public static void getAllMemberConversation() {
+        SocketClient.getInstance().sendMessages("GET_ALL_MEMBER_CONVERSATION " + SessionManager.getInstance().getCurrentUser().getId());
     }
 
     public static void handleAllMemberConversation(String message) {
@@ -72,6 +55,25 @@ public class ChatAppController {
             throw new RuntimeException(e);
         }
         ChatGUI.getInstance().getAllMemberConversation(members);
+    }
+
+    // send message offline user
+    public static void offlineUser() {
+        if (SessionManager.getInstance().getCurrentUser() != null) {
+            SocketClient.getInstance().sendMessages("OFFLINE " + SessionManager.getInstance().getCurrentUser().getUsername() + " " + SessionManager.getInstance().getCurrentUser().getId() + " " + SessionManager.numberPeopleChatWith + " " + SessionManager.numberGroupChatWith);
+        } else {
+            SocketClient.getInstance().sendMessages("OFFLINE null");
+        }
+    }
+
+    // receive an offline user from server
+    public static void handleOfflineUser(String message) {
+        SessionManager.getInstance().onlineUsers.remove(Integer.parseInt(message));
+    }
+
+    // receive an online user from server
+    public static void handleGetOnlineUser(String message) {
+        SessionManager.getInstance().onlineUsers.add(Integer.parseInt(message));
     }
 
 ////     for admin
@@ -148,4 +150,6 @@ public class ChatAppController {
             throw new RuntimeException(e);
         }
     }
+
+
 }

@@ -1,7 +1,7 @@
 package com.haichutieu.chatsystem.client.util;
 
 import com.haichutieu.chatsystem.client.ClientApp;
-import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
@@ -23,11 +23,7 @@ public class SceneController {
     public static void setPrimaryStage(Stage stage) {
         primaryStage = stage;
         primaryStage.setOnCloseRequest(e -> {
-            if (SessionManager.getInstance().getCurrentUser() != null) {
-                SocketClient.getInstance().sendMessages("OFFLINE " + SessionManager.getInstance().getCurrentUser().getUsername() + " " + SessionManager.getInstance().getCurrentUser().getId() + " " + SessionManager.numberPeopleChatWith + " " + SessionManager.numberGroupChatWith);
-            } else {
-                SocketClient.getInstance().sendMessages("OFFLINE null");
-            }
+            ChatAppController.offlineUser();
         });
     }
 

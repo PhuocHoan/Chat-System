@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class SocketClient {
-    private static SocketClient instance;
+    private static SocketClient instance = null;
     private final AsynchronousSocketChannel clientChannel;
 
     private SocketClient() {
@@ -22,7 +22,6 @@ public class SocketClient {
             clientChannel = AsynchronousSocketChannel.open();
             clientChannel.connect(new InetSocketAddress("localhost", 8080)).get();
             System.out.println("Connected to the server.");
-            System.out.println(clientChannel);
             // Start a thread to read messages from the server
             Thread.startVirtualThread(this::readMessages);
 
@@ -31,8 +30,11 @@ public class SocketClient {
         }
     }
 
-    public static SocketClient getInstance() {
-        return SocketClient.SocketClientHelper.INSTANCE;
+    public static synchronized SocketClient getInstance() {
+        if (instance == null) {
+            instance = new SocketClient();
+        }
+        return instance;
     }
 
     public AsynchronousSocketChannel getClientChannel() {
@@ -110,6 +112,15 @@ public class SocketClient {
         return jsonBuilder.toString();
     }
 
+    public void handleLogout() {
+        try {
+            clientChannel.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        instance = null;
+    }
+
     private void handleMessageFromServer(String messages) {
         String[] parts = messages.split(" ", 2);
         String command = parts[0];
@@ -125,9 +136,6 @@ public class SocketClient {
                 break;
             case "GET_ONLINE_USERS":
                 getOnlineUsers(parts[1]);
-                break;
-            case "GET_MEMBER_CONVERSATION":
-                getMemberConversation(parts[1]);
                 break;
             case "GET_ALL_MEMBER_CONVERSATION":
                 getAllMemberConversation(parts[1]);
@@ -155,6 +163,9 @@ public class SocketClient {
                 break;
             case "OFFLINE":
                 handleOffline(parts[1]);
+                break;
+            case "ONLINE":
+                handleOnline(parts[1]);
                 break;
             case "GET_FRIEND_LIST":
                 FriendsController.fetchFriendList(parts[1]);
@@ -193,10 +204,6 @@ public class SocketClient {
         ChatAppController.handleOnlineUsers(message);
     }
 
-    private void getMemberConversation(String message) {
-        ChatAppController.handleMemberConversation(message);
-    }
-
     private void getAllMemberConversation(String message) {
         ChatAppController.handleAllMemberConversation(message);
     }
@@ -230,7 +237,11 @@ public class SocketClient {
     }
 
     private void handleOffline(String message) {
-        System.out.println(message);
+        ChatAppController.handleOfflineUser(message);
+    }
+
+    private void handleOnline(String message) {
+        ChatAppController.handleGetOnlineUser(message);
     }
 
     private void handleGetFriendList(String message) {
@@ -239,9 +250,5 @@ public class SocketClient {
 
     private void handleUnfriend(String message) {
         FriendsController.handleUnfriend(message);
-    }
-
-    private static class SocketClientHelper {
-        private static final SocketClient INSTANCE = new SocketClient();
     }
 }

@@ -115,6 +115,20 @@ public class MessageService {
         return null;
     }
 
+    // get list of conversation that the user joined.
+    public static List<Long> getAllConversation(int userID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                        select conversationID
+                        from ConversationMember 
+                        where customerID = :userID
+                    """, Long.class).setParameter("userID", userID).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public static List<MessageConversation> getMessageConversation(long conversationID, int userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createNativeQuery("""

@@ -135,6 +135,11 @@
                   <Insets top="8.0" />
                </VBox.margin>
             </VBox>
+            <ImageView fitHeight="29.0" fitWidth="29.0" onMouseClicked="#logout" opacity="0.5" pickOnBounds="true" preserveRatio="true" styleClass="image">
+               <image>
+                  <Image url="@../../assets/logout.png" />
+               </image>
+            </ImageView>
             <ImageView fitHeight="48.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="image">
                <image>
                   <Image url="@../../assets/avatar.png" />
@@ -181,7 +186,7 @@
             </HBox>
             <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="354.0" style="-fx-background-color: rgba(255, 255, 255, .0); -fx-background-radius: 0 0 12 12; -fx-background: transparent; -fx-border-width: 0;" vbarPolicy="ALWAYS" VBox.vgrow="ALWAYS">
                <content>
-                  <VBox fx:id="chatList" prefHeight="61.0" prefWidth="219.0" spacing="10.0" style="-fx-background-color: rgba(255, 255, 255, .0);">
+                  <VBox fx:id="chatList" prefHeight="61.0" prefWidth="219.0" spacing="10.0">
                      <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                      </padding>

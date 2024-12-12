@@ -2,12 +2,12 @@ package com.haichutieu.chatsystem.client.util;
 
 import com.haichutieu.chatsystem.dto.Customer;
 
-import java.util.List;
+import java.util.HashSet;
 
 public class SessionManager {
     public static int numberPeopleChatWith;
     public static int numberGroupChatWith;
-    public List<Integer> onlineUsers;
+    public HashSet<Integer> onlineUsers = new HashSet<>();
 
     // implement Bill Pugh singleton class
     private Customer currentUser;

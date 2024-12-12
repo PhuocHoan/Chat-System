@@ -1,5 +1,6 @@
 package com.haichutieu.chatsystem.client.gui;
 
+import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
@@ -41,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ChatGUI {
     private static ChatGUI instance;
-    public ObservableList<ChatList> conversations = FXCollections.observableArrayList();
+    public ObservableList<ChatList> conversations = FXCollections.observableArrayList(); // conversations is in chat
     public Map<Long, GridPane> conversationGridPaneMap = new HashMap<>(); // Map<conversation_id, GridPane>
     public ObservableList<MessageConversation> messages = FXCollections.observableArrayList();
     public Map<Long, VBox> messageVBoxMap = new HashMap<>(); // Map<message_id, VBox>
@@ -107,9 +108,6 @@ public class ChatGUI {
 
     @FXML
     public void initialize() {
-        // Make the screen (container) focusable
-        screen.setFocusTraversable(true);
-        screen.setOnMouseClicked(event -> screen.requestFocus());
         // Handle the enter key event
         chatField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
@@ -156,8 +154,23 @@ public class ChatGUI {
 
         // search message
         VBox searchResultsBox = new VBox();
+        searchResultsBox.setPrefWidth(732);
+        searchResultsBox.setStyle("-fx-background-color: rgb(161, 112, 228);");
         ScrollPane searchScrollPane = new ScrollPane(searchResultsBox);
         searchScrollPane.setVisible(false); // Initially hidden
+        // Adjust position and size of searchScrollPane dynamically
+        searchScrollPane.setMaxHeight(300); // Default max height
+        searchScrollPane.setStyle("-fx-border-color: gray; -fx-border-width: 1px;");
+        // Position searchScrollPane above the chat content
+        StackPane.setAlignment(searchScrollPane, Pos.TOP_CENTER);
+        StackPane.setMargin(searchScrollPane, new Insets(78, 18, 0, 10)); // Adjust top margin
+
+        // Make the screen (container) focusable
+        screen.setFocusTraversable(true);
+        screen.setOnMouseClicked(event -> {
+            screen.requestFocus();
+            searchScrollPane.setVisible(false);
+        });
 
         searchMessage.textProperty().addListener((observable, oldValue, newValue) -> Platform.runLater(() -> {
             searchResultsBox.getChildren().clear();
@@ -170,13 +183,13 @@ public class ChatGUI {
                         // create message UI in search scrollpane
                         Text content = new Text(message.message);
                         String text = message.message;
-                        if (text.length() > 30) {
-                            text = text.substring(0, 27) + "...";
+                        if (text.length() > 90) {
+                            text = text.substring(0, 87) + "...";
                         }
                         content.setText(text);
                         content.setFontSmoothingType(FontSmoothingType.LCD);
                         TextFlow textFlow = new TextFlow(content);
-                        textFlow.setPrefWidth(510);
+                        textFlow.setPrefWidth(600);
                         textFlow.getStyleClass().add("message-search");
                         textFlow.setPadding(new Insets(10, 10, 10, 10));
                         Text time = new Text(formatChatTimeStamp(message.time));
@@ -220,28 +233,27 @@ public class ChatGUI {
         // Add components to StackPane
         mainChatContainer.getChildren().add(searchScrollPane);
 
-        // Adjust position and size of searchScrollPane dynamically
-        searchScrollPane.setMaxHeight(300); // Default max height
-        searchScrollPane.setStyle("-fx-background-color: rgba(255, 255, 255, .7); -fx-border-color: gray; -fx-border-width: 1px;");
-        // Position searchScrollPane above the chat content
-        StackPane.setAlignment(searchScrollPane, Pos.TOP_CENTER);
-        StackPane.setMargin(searchScrollPane, new Insets(78, 10, 0, 10)); // Adjust top margin
-
+        ChatAppController.getOnlineUsers();
+        ChatAppController.getAllMemberConversation();
         ChatAppController.getChatList();
-
-        // refresh online users every 1 minute to check for online conversation
-        scheduler.scheduleAtFixedRate(() -> {
-            ChatAppController.getOnlineUsers();
-            List<Long> conversationIDs = conversations.stream().map(conversation -> conversation.conversationID).toList();
-            if (!conversationIDs.isEmpty()) {
-                ChatAppController.getAllMemberConversation(conversationIDs);
-            }
-        }, 1, 5, TimeUnit.SECONDS); // delay first 5s
     }
 
     @FXML
     public void switchToProfileTab() {
 
+    }
+
+    @FXML
+    void logout(MouseEvent event) {
+        ChatAppController.offlineUser();
+        SocketClient.getInstance().handleLogout();
+        SceneController.scenes.clear();
+        try {
+            SceneController.initScenes();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        SceneController.setScene("login");
     }
 
     @FXML
@@ -400,7 +412,7 @@ public class ChatGUI {
                 headerStatus.setText(status);
                 rightSideBarStatus.setText(status);
             }
-        }, 1, 5, TimeUnit.SECONDS); // delay first 5s
+        }, 1, 5, TimeUnit.SECONDS); // delay first 1s
 
         conversationInfo.getChildren().addAll(conversationName, conversationTimeStamp);
 
@@ -427,10 +439,6 @@ public class ChatGUI {
         return conversation;
     }
 
-    public void getMemberConversation(Long conversationID, List<Integer> members) {
-        memberConversation.put(conversationID, members);
-    }
-
     public void getAllMemberConversation(Map<Long, List<Integer>> memberConversationServer) {
         memberConversation.putAll(memberConversationServer);
     }
@@ -447,7 +455,7 @@ public class ChatGUI {
         messageTo.setFont(Font.font(14));
         messageTo.setFontSmoothingType(FontSmoothingType.LCD);
         TextFlow textFlow = new TextFlow(messageTo);
-        textFlow.setPrefWidth(510);
+        textFlow.setPrefWidth(525);
         textFlow.getStyleClass().add("message-to");
         textFlow.setPadding(new Insets(10, 10, 10, 10));
         Button remove = new Button("remove");
@@ -465,7 +473,7 @@ public class ChatGUI {
         messageFrom.setFont(Font.font(14));
         messageFrom.setFontSmoothingType(FontSmoothingType.LCD);
         TextFlow textFlow = new TextFlow(messageFrom);
-        textFlow.setPrefWidth(510);
+        textFlow.setPrefWidth(525);
         textFlow.getStyleClass().add("message-from");
         textFlow.setPadding(new Insets(10, 10, 10, 10));
         Button remove = new Button("remove");
