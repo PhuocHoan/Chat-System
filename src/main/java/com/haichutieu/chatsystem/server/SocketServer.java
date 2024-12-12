@@ -1,5 +1,8 @@
 package com.haichutieu.chatsystem.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.haichutieu.chatsystem.dto.UserLoginTime;
+import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.dto.Customer;
@@ -7,6 +10,7 @@ import com.haichutieu.chatsystem.dto.LoginTime;
 import com.haichutieu.chatsystem.dto.MessageConversation;
 import com.haichutieu.chatsystem.server.dal.CustomerService;
 import com.haichutieu.chatsystem.server.dal.FriendsService;
+import com.haichutieu.chatsystem.server.dal.HistoryService;
 import com.haichutieu.chatsystem.server.dal.HibernateUtil;
 import com.haichutieu.chatsystem.server.dal.MessageService;
 import com.haichutieu.chatsystem.util.Util;
@@ -79,35 +83,29 @@ public class SocketServer {
 
                     String line;
                     while ((line = Util.readLine(clientData)) != null) {
+                        System.out.println("[SERVER]: Received " + line);
                         String response = processInput(line, clientChannel);
                         if (response != null) {
                             if (response.getBytes().length <= bufferSize) {
+                                System.out.println("[SERVER]: Sending " + response);
                                 clientChannel.write(ByteBuffer.wrap((response + "\n").getBytes())).get();
                             } else {
                                 splitIntoChunks(response).forEach(chunk -> {
-                                    ByteBuffer responseBuffer = ByteBuffer.wrap(chunk.getBytes());
-                                    System.out.println("[SERVER] Sending: " + new String(responseBuffer.array()));
-                                    clientChannel.write(responseBuffer, responseBuffer, new CompletionHandler<>() {
-                                        @Override
-                                        public void completed(Integer result, ByteBuffer attachment) {
-                                            if (attachment.hasRemaining()) {
-                                                System.out.println("[SERVER] Sending: " + new String(attachment.array()));
-                                                clientChannel.write(attachment, attachment, this);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void failed(Throwable exc, ByteBuffer attachment) {
-                                            exc.printStackTrace();
-                                        }
-                                    });
+                                    try {
+                                        System.out.println("[SERVER]: Sending " + chunk);
+                                        clientChannel.write(ByteBuffer.wrap(chunk.getBytes())).get();
+                                    } catch (InterruptedException | ExecutionException e) {
+                                        throw new RuntimeException(e);
+                                    }
                                 });
+                                clientChannel.write(ByteBuffer.wrap(("\n").getBytes())).get();
                             }
                         }
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                System.out.println(e.getMessage());
             }
         });
     }
@@ -177,6 +175,25 @@ public class SocketServer {
                 return handleUnfriend(content);
             case "OFFLINE":
                 return handleOffline(content, clientChannel); // user exit or logout
+            
+            // Admin commands
+            case "LOGIN_ADMIN":
+                return handleAdminLogin(content);
+            case "FETCH_ACCOUNT_LIST":
+                return handleFetchAccountList();
+            case "ADD_ACCOUNT":
+                return handleAddAccount(content);
+            case "DELETE_ACCOUNT": 
+                return handleDeleteAccount(content);
+            case "EDIT_ACCOUNT":
+                return handleEditAccount(content);
+//            case "TOGGLE_ACCOUNT_STATUS" -> handleToggleAccountStatus(content);
+//            case "CHANGE_PASSWORD" -> handleChangePassword(content);
+            case "LOGIN_HISTORY":
+                return handleLoginHistory(content);
+//            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
+//            case "SPAM_LIST" -> handleSpamList(content);
+            
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
@@ -403,27 +420,35 @@ public class SocketServer {
         return "REMOVE_ALL_MESSAGE_ME Remove all message on your side successfully";
     }
 
-    private String handleGetFriendList(String userID) {
-        int id = Integer.parseInt(userID);
-        List<Customer> friends;
+//    private String handleMessage(String[] parts) {
+//        if (parts.length < 3) {
+//            return "ERROR Invalid MESSAGE command\n";
+//        }
+//        String sender = parts[1];
+//        String recipient = parts[2].split(" ", 2)[0];
+//        String messageContent = parts[2].split(" ", 2)[1];
+//        Customer recipientUser = onlineUsers.get(recipient);
+//        if (recipientUser != null) {
+
+    //            sendMessageToClient(recipientUser.getChannel(), "MESSAGE " + sender + ": " + messageContent + "\n");
+//
+//            return "OK Message sent\n";
+//        } else {
+//            return "ERROR User is not online\n";
+//        }
+//    }
+    private String handleGetFriendList(String content) {
+        String[] parts = content.split(" ", 2);
+        int id = Integer.parseInt(parts[1]);
+
+        List<Customer> friends = null;
         friends = FriendsService.fetchFriends(id);
 
         if (friends == null) {
-            return "GET_FRIEND_LIST ERROR Failed to fetch friends";
+            return "GET_FRIEND_LIST " + parts[0] + " ERROR Failed to fetch friends";
         }
 
-        List<Integer> onlineUsers = new ArrayList<>();
-        for (var entry : this.onlineUsers.entrySet()) {
-            onlineUsers.add(entry.getKey());
-        }
-
-        String message = "GET_FRIEND_LIST OK " + Util.serializeObject(friends) + " END";
-        if (!onlineUsers.isEmpty()) {
-            message += " ONLINE " + Util.serializeObject(onlineUsers) + " END";
-        }
-        message += "\n";
-
-        return message;
+        return "GET_FRIEND_LIST " + parts[0] + " OK " + (parts[0].equals("ADMIN") ? id : "") + " " + Util.serializeObject(friends);
     }
 
     private String handleUnfriend(String message) {
@@ -467,8 +492,91 @@ public class SocketServer {
         return "BLOCK OK " + blockedID;
     }
 
+    private String handleAdminLogin(String content) {
+        String[] parts = content.split(" ");
+        String username = parts[0];
+        String password = parts[1];
+        if (username.equals("admin") && password.equals("admin")) {
+            return "LOGIN_ADMIN OK";
+        }
+        return "LOGIN_ADMIN INCORRECT";
+    }
+
+    private String handleFetchAccountList() {
+        List<Customer> allAccounts = CustomerService.fetchAllCustomers();
+        return "FETCH_ACCOUNT_LIST OK " + Util.serializeObject(allAccounts);
+    }
+
     private static class SocketServerHelper {
         private static final SocketServer INSTANCE = new SocketServer();
+    }
+
+    private String handleAddAccount(String content) {
+        Customer cus = null;
+        cus = Util.deserializeObject(content, Customer.class);
+
+        if (CustomerService.getCustomerByUsername(cus.getUsername()) != null) {
+            return "ADD_ACCOUNT EXISTS Username already exists!";
+        }
+
+        if (CustomerService.getCustomerByEmail(cus.getEmail()) != null) {
+            return "ADD_ACCOUNT EXISTS Email already exists!";
+        }
+
+        if (!CustomerService.addCustomer(cus)) {
+            return "ADD_ACCOUNT ERROR Server failed to add account";
+        }
+
+        Customer newAccount = CustomerService.getCustomerByUsername(cus.getUsername());
+        return "ADD_ACCOUNT OK " + Util.serializeObject(newAccount);
+    }
+
+    private String handleDeleteAccount(String content) {
+        int id = Integer.parseInt(content);
+        if (!CustomerService.deleteCustomer(id)) {
+            return "DELETE_ACCOUNT ERROR " + id;
+        }
+        return "DELETE_ACCOUNT OK " + id;
+    }
+
+    private String handleEditAccount(String content) {
+        Customer cus = null;
+        cus = Util.deserializeObject(content, Customer.class);
+
+        Customer checkCus = CustomerService.getCustomerByUsername(cus.getUsername());
+        if (checkCus != null && checkCus.getId() != cus.getId()) {
+            return "EDIT_ACCOUNT ERROR Username already exists!";
+        }
+
+        checkCus = null;
+        checkCus = CustomerService.getCustomerByEmail(cus.getEmail());
+        if (checkCus != null && checkCus.getId() != cus.getId()) {
+            return "EDIT_ACCOUNT ERROR Email already exists!";
+        }
+
+        if (!CustomerService.editCustomer(cus)) {
+            return "EDIT_ACCOUNT ERROR Server failed to edit account";
+        }
+
+        return "EDIT_ACCOUNT OK " + content;
+    }
+
+    private String handleLoginHistory(String content) {
+        if (content.startsWith("ALL")) {
+            List<UserLoginTime> loginTimes = HistoryService.fetchAllLoginHistory();
+            if (loginTimes == null) {
+                return "LOGIN_HISTORY ALL ERROR";
+            }
+            return "LOGIN_HISTORY ALL OK " + Util.serializeObject(loginTimes);
+        } else if (content.startsWith("USER")) {
+            int id = Integer.parseInt(content.split(" ")[1]);
+            List<LoginTime> loginTimes = HistoryService.fetchUserLoginHistory(id);
+            if (loginTimes == null) {
+                return "LOGIN_HISTORY USER ERROR";
+            }
+            return "LOGIN_HISTORY USER OK " + Util.serializeObject(loginTimes);
+        }
+        return "LOGIN_HISTORY ERROR Incorrect command";
     }
 }
 

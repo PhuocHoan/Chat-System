@@ -39,7 +39,7 @@
           </Label>
           <VBox prefHeight="200.0" prefWidth="100.0" spacing="8.0" VBox.vgrow="ALWAYS">
               <children>
-                  <Button id="btn-chosen" fx:id="userBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleUserButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User Management" textFill="#16111a">
+                  <Button id="btn-default" fx:id="userBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleUserButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User Management" textFill="#16111a">
                       <VBox.margin>
                           <Insets />
                       </VBox.margin>
@@ -87,7 +87,7 @@
                   </Button>
               </children>
           </VBox>
-          <Button id="btn-logout" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="20.0" layoutY="241.0" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000000.0" stylesheets="@adminPanel.css" text="Back to chat" textFill="WHITE">
+          <Button id="btn-logout" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="20.0" layoutY="241.0" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000000.0" stylesheets="@adminPanel.css" text="Logout" textFill="WHITE">
               <padding>
                   <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
               </padding>
@@ -100,7 +100,7 @@
           <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
         </padding>
     </VBox>
-   <VBox stylesheets="@adminPanel.css" GridPane.columnIndex="1">
+   <VBox stylesheets="@adminPanel.css" visible="false" GridPane.columnIndex="1">
       <children>
          <Label graphicTextGap="10.0" text="User Management">
             <font>

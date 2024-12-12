@@ -58,10 +58,11 @@ public class FriendGUI {
 
     @FXML
     public void initialize() {
+        // Fetch for initial friend list
         friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         friendContainer.getChildren().add(friendListLoading);
-        int userId = SessionManager.getInstance().getCurrentUser().getId();
-        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
+        long userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
     }
 
     @FXML
