@@ -1,21 +1,18 @@
 package com.haichutieu.chatsystem.client.bus;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.dto.Customer;
+import com.haichutieu.chatsystem.util.Util;
 
 import java.util.List;
 import java.util.Set;
 
 public class FriendsController {
-
-    public static void fetchFriendList(String message) throws JsonProcessingException {
+    public static void fetchFriendList(String message) {
         List<Customer> friends = null;
         Set<Integer> onlineFriendIds = null;
-        ObjectMapper mapper = new ObjectMapper();
 
         String[] parts = message.split(" ", 3);
 
@@ -46,7 +43,6 @@ public class FriendsController {
 
     public static void handleUnfriend(String message) {
         String[] parts = message.split(" ");
-        String status = parts[0];
         int friendId = Integer.parseInt(parts[1]);
         if (parts[0].equals("ERROR")) {
             FriendGUI.getInstance().onUnfriendError(friendId);
@@ -65,7 +61,6 @@ public class FriendsController {
 
     public static void handleBlock(String message) {
         String[] parts = message.split(" ");
-        String status = parts[0];
         int friendId = Integer.parseInt(parts[1]);
         if (parts[0].equals("ERROR")) {
             FriendGUI.getInstance().onBlockError(friendId);
@@ -75,23 +70,14 @@ public class FriendsController {
     }
 
     public static void handleUserSearch(String message) {
-        List<Customer> users = null;
-
+        List<Customer> users;
         if (message.startsWith("ERROR")) {
-            FriendGUI.getInstance().onUserSearch(false, users);
+            FriendGUI.getInstance().onUserSearch(false, null);
         } else {
             String data = message.split(" ", 2)[1];
-            ObjectMapper mapper = new ObjectMapper();
-
-            try {
-                users = mapper.readValue(data, new TypeReference<List<Customer>>() {
-                });
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-
+            users = Util.deserializeObject(data, new TypeReference<>() {
+            });
             FriendGUI.getInstance().onUserSearch(true, users);
         }
     }
 }
-

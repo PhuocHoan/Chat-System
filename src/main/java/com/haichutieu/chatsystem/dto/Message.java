@@ -3,20 +3,26 @@ package com.haichutieu.chatsystem.dto;
 import jakarta.persistence.*;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
 @Table(name = "message")
 public class Message {
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<MessageDisplay> messageDisplays = new ArrayList<>();
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
     @Column(name = "conversation_id", nullable = false)
     private long conversationID;
 
-    @Id
     @Column(name = "customer_id", nullable = false)
     private int customerID;
 
-    @Id
     @Column(name = "time", nullable = false)
     private Timestamp time;
 
@@ -24,6 +30,31 @@ public class Message {
     private String message;
 
     public Message() {
+    }
+
+    public Message(Long conversationID, int customerID, Timestamp time, String message) {
+        this.conversationID = conversationID;
+        this.customerID = customerID;
+        this.time = time;
+        this.message = message;
+    }
+
+    public void addMessageDisplay(MessageDisplay messageDisplay) {
+        messageDisplays.add(messageDisplay);
+        messageDisplay.setMessage(this);
+    }
+
+    public void removeMessageDisplay(MessageDisplay messageDisplay) {
+        messageDisplays.remove(messageDisplay);
+        messageDisplay.setMessage(null);
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public long getConversationID() {
@@ -74,6 +105,7 @@ public class Message {
     @Override
     public String toString() {
         return "Message{" +
+                "id=" + id +
                 "conversationID=" + conversationID +
                 ", customerID=" + customerID +
                 ", time=" + time +

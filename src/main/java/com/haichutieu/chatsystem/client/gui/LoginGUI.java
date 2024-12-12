@@ -1,11 +1,7 @@
 package com.haichutieu.chatsystem.client.gui;
 
-import com.haichutieu.chatsystem.client.bus.FriendsController;
-import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.bus.AuthController;
-import com.haichutieu.chatsystem.client.util.SessionManager;
-import com.haichutieu.chatsystem.dto.Customer;
-import com.haichutieu.chatsystem.util.Util;
+import com.haichutieu.chatsystem.client.util.SceneController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -15,6 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -134,9 +131,9 @@ public class LoginGUI {
     void handleLogin() {
         List<String> fields = List.of(username.getText(), password.getText());
         if (username.getStyleClass().contains("error") || password.getStyleClass().contains("error")) {
-            AuthController.handleLogin(fields, "error");
+            AuthController.sendLogin(fields, "error");
         } else {
-            AuthController.handleLogin(fields, null);
+            AuthController.sendLogin(fields, null);
         }
     }
 
@@ -148,17 +145,16 @@ public class LoginGUI {
     // receive login result from socket client
     public void loginResult(String message) {
         Platform.runLater(() -> {
-            if (message.startsWith("ERROR")) {
-                displayError(message.replaceFirst("ERROR ", ""));
-            } else {
-                String[] parts = message.split(" END ", 2);
-                Customer customer = Util.deserializeObject(parts[0], Customer.class);
-                SessionManager.getInstance().setCurrentUser(customer);
-                System.out.println(parts[1]);
-                if (customer.getId() != SessionManager.getInstance().getCurrentUser().getId()) {
-                    FriendGUI.getInstance().onUserOnline(customer.getId());
+            if (!message.startsWith("ERROR")) {
+                try {
+                    SceneController.addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
                 SceneController.setScene("chat");
+                System.out.println(message);
+            } else {
+                displayError(message.replaceFirst("ERROR ", ""));
             }
         });
     }
