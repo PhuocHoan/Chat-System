@@ -126,6 +126,7 @@ public class SocketClient {
                 break;
             case "ADD_ACCOUNT":
                 UserManagement.getInstance().onAddNewAccount(parts[1]);
+                break;
             case "DELETE_ACCOUNT":
                 UserManagement.getInstance().onDeleteAccount(parts[1]);
                 break;

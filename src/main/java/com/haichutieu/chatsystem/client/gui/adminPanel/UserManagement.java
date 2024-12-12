@@ -21,6 +21,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -103,7 +104,7 @@ public class UserManagement {
         birthColumn.setCellValueFactory(new PropertyValueFactory<>("birthdate"));
         birthColumn.setCellFactory(column -> {
             return new TableCell<Customer, Date>() {
-                private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
                 @Override
                 protected void updateItem(Date item, boolean empty) {
@@ -152,7 +153,7 @@ public class UserManagement {
                 @Override
                 protected void updateItem(Timestamp item, boolean empty) {
                     super.updateItem(item, empty);
-                    if (empty) {
+                    if (empty || item == null) {
                         setText(null);
                     } else {
                         setText(sdf.format(item));
@@ -193,7 +194,12 @@ public class UserManagement {
                             SocketClient.getInstance().sendMessages("LOGIN_HISTORY USER " + getTableRow().getItem().getId());
                         });
 
-                        menuButton.getItems().addAll(editItem, deleteItem, lockItem, changePasswordItem, loginHistoryItem);
+                        MenuItem friendsItem = new MenuItem("View Friends");
+                        friendsItem.setOnAction(event -> {
+                            SocketClient.getInstance().sendMessages("GET_FRIEND_LIST ADMIN " + getTableRow().getItem().getId());
+                        });
+
+                        menuButton.getItems().addAll(editItem, deleteItem, lockItem, changePasswordItem, loginHistoryItem, friendsItem);
 
                         setGraphic(menuButton);
                     }
@@ -202,7 +208,7 @@ public class UserManagement {
             return cell;
         });
 
-        accountTable.getColumns().addAll(idColumn, nameColumn, emailColumn, birthColumn, addressColumn, genderColumn, statusColumn, dateCreatedColumn, actionsColumn);
+        accountTable.getColumns().addAll(idColumn, usernameColumn, nameColumn, emailColumn, birthColumn, addressColumn, genderColumn, statusColumn, dateCreatedColumn, actionsColumn);
     }
 
     public void onFetchAccountList(List<Customer> accounts) {
@@ -277,10 +283,13 @@ public class UserManagement {
             }
 
             Customer newAccount = new Customer();
+            newAccount.setId(account.getId());
             newAccount.setUsername(username.getText());
+            newAccount.setPassword(account.getPassword());
             newAccount.setName(name.getText());
             newAccount.setEmail(email.getText());
             newAccount.setAddress(address.getText());
+            newAccount.setCreateDate(account.getCreateDate());
             if (birthdate.getValue() != null)
             {
                 newAccount.setBirthdate(java.sql.Date.valueOf(birthdate.getValue()));
@@ -312,12 +321,12 @@ public class UserManagement {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Edit Account");
                 alert.setContentText("Account updated successfully.");
-                alert.showAndWait();
+                alert.show();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Edit Account");
-                alert.setContentText("Failed to update account.");
-                alert.showAndWait();
+                alert.setContentText(message.split(" ", 2)[1]);
+                alert.show();
             }
         });
     }
@@ -339,16 +348,19 @@ public class UserManagement {
     public void onDeleteAccount(String message) {
         Platform.runLater(() -> {
             String[] parts = message.split(" ", 2);
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Delete Account");
             if (parts[0].equals("OK")) {
                 // find in the list the account to delete
                 accountList.removeIf(account -> account.getId() == Integer.parseInt(parts[1]));
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Delete Account");
                 alert.setContentText("Account deleted successfully.");
+                alert.show();
             } else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Delete Account");
                 alert.setContentText("Failed to delete account.");
+                alert.show();
             }
-            alert.showAndWait();
         });
     }
 
@@ -373,8 +385,8 @@ public class UserManagement {
 
         GridPane grid = new GridPane();
         grid.setAlignment(Pos.CENTER);
+        grid.setVgap(15);
         grid.setHgap(10);
-        grid.setVgap(10);
         grid.setPadding(new Insets(25, 25, 25, 25));
 
         grid.add(new Label("Username:"), 0, 0);
@@ -406,6 +418,7 @@ public class UserManagement {
         submit.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
+            alert.setContentText(null);
             validateInput(alert, username.getText(), name.getText(), email.getText());
             if (alert.getContentText() != null) {
                 alert.showAndWait();
@@ -415,7 +428,8 @@ public class UserManagement {
             Customer newAccount = new Customer();
             newAccount.setUsername(username.getText());
             newAccount.setName(name.getText());
-            newAccount.setPassword(password.getText());
+            String hashedPassword = BCrypt.hashpw(password.getText(), BCrypt.gensalt(10));
+            newAccount.setPassword(hashedPassword);
             newAccount.setEmail(email.getText());
             newAccount.setAddress(address.getText());
             if (birthdate.getValue() != null) {
@@ -427,7 +441,6 @@ public class UserManagement {
             newAccount.setAdmin(false);
 
             SocketClient.getInstance().sendMessages("ADD_ACCOUNT " + Util.serializeObject(newAccount));
-            stage.close();
         });
         grid.add(submit, 0, 7, 2, 1);
 
@@ -447,7 +460,8 @@ public class UserManagement {
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Add New Account");
-                alert.setContentText(message.contains("EXISTS") ? "Username or email already exists." : "Failed to add new account.");
+                alert.setHeaderText(message.split(" ", 2)[0]);
+                alert.setContentText(message.split(" ", 2)[1]);
                 alert.showAndWait();
             }
         });
@@ -506,6 +520,49 @@ public class UserManagement {
             loginTable.setItems(FXCollections.observableArrayList(loginTimes));
 
             Scene scene = new Scene(loginTable, 300, 400);
+            stage.setScene(scene);
+            stage.show();
+        });
+    }
+
+    /* ============================
+           FETCH FRIENDS LIST
+       ============================ */
+    public void onReceiveFriendList(boolean success, int userID, List<Customer> friends) {
+        Platform.runLater(() -> {
+            if (!success) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("User's Friend List");
+                alert.setContentText("Count not fetch friends information.");
+                return;
+            }
+
+            Stage stage = new Stage();
+            stage.initOwner(SceneController.primaryStage);
+            stage.initModality(Modality.NONE);
+            stage.setTitle("Friends List - User #"+ userID);
+
+            TableView<Customer> friendsTable = new TableView<>();
+            friendsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+            TableColumn<Customer, Integer> userIdColumn = new TableColumn<>("UserID");
+            userIdColumn.setCellValueFactory(new PropertyValueFactory<>("customerID"));
+            userIdColumn.setStyle( "-fx-alignment: BASELINE_CENTER;");
+            friendsTable.getColumns().add(userIdColumn);
+
+            TableColumn<Customer, String> usernameColumn = new TableColumn<>("Username");
+            usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+            usernameColumn.setStyle( "-fx-alignment: CENTER-LEFT;");
+            friendsTable.getColumns().add(usernameColumn);
+
+            TableColumn<Customer, String> nameColumn = new TableColumn<>("Name");
+            nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+            nameColumn.setStyle( "-fx-alignment: CENTER-LEFT;");
+            friendsTable.getColumns().add(nameColumn);
+
+            friendsTable.setItems(FXCollections.observableArrayList(friends));
+
+            Scene scene = new Scene(friendsTable, 300, 400);
             stage.setScene(scene);
             stage.show();
         });

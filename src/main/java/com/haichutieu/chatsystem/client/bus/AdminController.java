@@ -64,4 +64,18 @@ public class AdminController {
             }
         }
     }
+
+    public static void onReceiveUserFriendList(String message) {
+        String[] parts = message.split(" ", 2);
+        if (parts[0].equals("OK")) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                List<Customer> accounts = objectMapper.readValue(parts[1], new TypeReference<List<Customer>>() {
+                });
+                UserManagement.getInstance().onFetchAccountList(accounts);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

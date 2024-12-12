@@ -69,7 +69,7 @@ public class FriendGUI {
         friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         friendContainer.getChildren().add(friendListLoading);
         long userId = SessionManager.getInstance().getCurrentUser().getId();
-        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST " + userId);
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
     }
 
     @FXML

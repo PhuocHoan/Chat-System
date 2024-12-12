@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
+import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.dto.Customer;
 
 import java.util.List;
@@ -16,16 +17,31 @@ public class FriendsController {
         Set<Integer> onlineFriendIds = null;
         ObjectMapper mapper = new ObjectMapper();
 
-        if (!message.startsWith("ERROR")) {
-            String[] parts = message.split("END");
-            String[] friendsJson = parts[0].trim().split(" ", 2);
-            String[] onlineUserJson = parts[1].trim().split(" ", 2);
-            friends = mapper.readValue(friendsJson[1], new TypeReference<List<Customer>>() {
-            });
-            onlineFriendIds = mapper.readValue(onlineUserJson[1], new TypeReference<Set<Integer>>() {
-            });
+        String[] parts = message.split(" ", 3);
+
+        if(parts[0].equals("ADMIN")) {
+            if (parts[1].equals("ERROR")) {
+                UserManagement.getInstance().onReceiveFriendList(false, 0, null);
+            } else {
+                int userId = Integer.parseInt(parts[2].split(" ", 2)[0]);
+                String json = parts[2].split(" ", 2)[1];
+                System.out.println(json);
+                friends = mapper.readValue(json, new TypeReference<List<Customer>>() {
+                });
+                UserManagement.getInstance().onReceiveFriendList(true, userId, friends);
+            }
+            return;
         }
-        FriendGUI.getInstance().onReceiveFriendList(friends, onlineFriendIds);
+
+        if(parts[0].equals("USER")) {
+            if (!message.startsWith("ERROR")) {
+                String[] friendsJson = parts[0].trim().split(" ", 2);
+                String[] onlineUserJson = parts[1].trim().split(" ", 2);
+                friends = mapper.readValue(friendsJson[1], new TypeReference<List<Customer>>() {
+                });
+            }
+            FriendGUI.getInstance().onReceiveFriendList(friends, onlineFriendIds);
+        }
     }
 
     public static void handleUnfriend(String message) {

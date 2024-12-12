@@ -133,6 +133,7 @@ public class SocketServer {
             case "UNFRIEND" -> handleUnfriend(content);
             case "SPAM" -> handleSpamReport(content);
             case "BLOCK" -> handleBlock(content);
+            case "GET_ONLINE_USERS" -> getOnlineUsers();
 //            case "MESSAGE" -> // ex: MESSAGE username1 username2 hello world
 //                    handleMessage(parts);
 //            case "CREATE_GROUP" -> handleCreateGroup(parts);
@@ -227,6 +228,10 @@ public class SocketServer {
         return "LOGIN " + customerContent + " END User " + customer.getUsername() + " is online now"; // END is defined as the end of the data sending
     }
 
+    private String getOnlineUsers() {
+        return "GET_ONLINE_USERS " + Util.serializeObject(onlineUsers.keySet());
+    }
+
     private String handleOffline(String username, AsynchronousSocketChannel clientChannel) {
         try {
             clientChannel.close();
@@ -260,27 +265,18 @@ public class SocketServer {
 //            return "ERROR User is not online\n";
 //        }
 //    }
-    private String handleGetFriendList(String userID) {
-        int id = Integer.parseInt(userID);
+    private String handleGetFriendList(String content) {
+        String[] parts = content.split(" ", 2);
+        int id = Integer.parseInt(parts[1]);
+
         List<Customer> friends = null;
         friends = FriendsService.fetchFriends(id);
 
         if (friends == null) {
-            return "GET_FRIEND_LIST ERROR Failed to fetch friends";
+            return "GET_FRIEND_LIST " + parts[0] + " ERROR Failed to fetch friends";
         }
 
-        List<Integer> onlineUsers = new ArrayList<>();
-        for (var entry : this.onlineUsers.entrySet()) {
-            onlineUsers.add(entry.getKey());
-        }
-
-        String message = "GET_FRIEND_LIST OK " + Util.serializeObject(friends) + " END";
-        if (!onlineUsers.isEmpty()) {
-            message += " ONLINE " + Util.serializeObject(onlineUsers) + " END";
-        }
-        message += "\n";
-
-        return message;
+        return "GET_FRIEND_LIST " + parts[0] + " OK " + (parts[0].equals("ADMIN") ? id : "") + " " + Util.serializeObject(friends);
     }
 
     private String handleUnfriend(String message) {
@@ -396,12 +392,20 @@ public class SocketServer {
         Customer cus = null;
         cus = Util.deserializeObject(content, Customer.class);
 
-        if (cus == null) {
-            return "ADD_ACCOUNT ERROR";
+        if (CustomerService.getCustomerByUsername(cus.getUsername()) != null) {
+            return "ADD_ACCOUNT EXISTS Username already exists!";
         }
 
-        CustomerService.addCustomer(cus);
-        return "ADD_ACCOUNT OK " + content;
+        if (CustomerService.getCustomerByEmail(cus.getEmail()) != null) {
+            return "ADD_ACCOUNT EXISTS Email already exists!";
+        }
+
+        if (!CustomerService.addCustomer(cus)) {
+            return "ADD_ACCOUNT ERROR Server failed to add account";
+        }
+
+        Customer newAccount = CustomerService.getCustomerByUsername(cus.getUsername());
+        return "ADD_ACCOUNT OK " + Util.serializeObject(newAccount);
     }
 
     private String handleDeleteAccount(String content) {
@@ -416,12 +420,19 @@ public class SocketServer {
         Customer cus = null;
         cus = Util.deserializeObject(content, Customer.class);
 
-        if (cus == null) {
-            return "EDIT_ACCOUNT ERROR";
+        Customer checkCus = CustomerService.getCustomerByUsername(cus.getUsername());
+        if (checkCus != null && checkCus.getId() != cus.getId()) {
+            return "EDIT_ACCOUNT ERROR Username already exists!";
+        }
+
+        checkCus = null;
+        checkCus = CustomerService.getCustomerByEmail(cus.getEmail());
+        if (checkCus != null && checkCus.getId() != cus.getId()) {
+            return "EDIT_ACCOUNT ERROR Email already exists!";
         }
 
         if (!CustomerService.editCustomer(cus)) {
-            return "EDIT_ACCOUNT ERROR";
+            return "EDIT_ACCOUNT ERROR Server failed to edit account";
         }
 
         return "EDIT_ACCOUNT OK " + content;

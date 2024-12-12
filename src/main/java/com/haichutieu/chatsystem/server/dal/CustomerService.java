@@ -11,17 +11,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class CustomerService {
-    public static void addCustomer(Customer customer) {
+    public static boolean addCustomer(Customer customer) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
             session.persist(customer);
             transaction.commit();
+            return true;
         } catch (Exception e) {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             e.printStackTrace();
+            return false;
         }
     }
 
@@ -41,7 +43,6 @@ public class CustomerService {
             }
             e.printStackTrace();
         }
-
         return true;
     }
 
@@ -52,13 +53,14 @@ public class CustomerService {
             session.merge(customer);
             transaction.commit();
         } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Loi roi!");
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
-                return false;
             }
-            e.printStackTrace();
+            return false;
         }
-
+        System.out.println("OK roi!");
         return true;
     }
 
