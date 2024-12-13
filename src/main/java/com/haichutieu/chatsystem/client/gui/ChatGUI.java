@@ -65,9 +65,6 @@ public class ChatGUI {
     private HBox deleteAllMessages;
 
     @FXML
-    private ImageView friendsBtn;
-
-    @FXML
     private Text headerName;
 
     @FXML
@@ -243,12 +240,12 @@ public class ChatGUI {
     }
 
     @FXML
-    public void switchToFriendsTab() throws IOException {
+    public void switchToFriendsTab() {
         SceneController.setScene("friends");
     }
 
     @FXML
-    void switchToAccountTab() throws IOException {
+    void switchToAccountTab() {
         SceneController.setScene("account");
     }
 

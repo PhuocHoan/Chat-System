@@ -1,17 +1,23 @@
 package com.haichutieu.chatsystem.client.gui.adminPanel;
 
 import com.haichutieu.chatsystem.client.SocketClient;
-import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
 
 import java.io.IOException;
 
 public class AdminLogin {
     private static AdminLogin instance;
-
+    @FXML
+    private TextField usernameField;
+    @FXML
+    private TextField passwordField;
+    @FXML
+    private Button submitButton;
     public AdminLogin() {
         instance = this;
     }
@@ -19,13 +25,6 @@ public class AdminLogin {
     public static AdminLogin getInstance() {
         return instance;
     }
-
-    @FXML
-    private TextField usernameField;
-    @FXML
-    private TextField passwordField;
-    @FXML
-    private Button submitButton;
 
     public void initialize() {
         submitButton.setOnAction(e -> {

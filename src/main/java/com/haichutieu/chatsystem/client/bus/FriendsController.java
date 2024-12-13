@@ -89,4 +89,34 @@ public class FriendsController {
             FriendGUI.getInstance().onUserSearch(true, users);
         }
     }
+
+    public static void handleAcceptFriend(String part) {
+        String[] parts = part.split(" ", 2);
+        if (parts[0].equals("ERROR")) {
+            FriendGUI.getInstance().onReceiveFriendRequestList(false, null);
+        } else {
+            List<Customer> friendRequests = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+            FriendGUI.getInstance().onReceiveFriendRequestList(true, friendRequests);
+        }
+    }
+
+    public static void handleAnswerInvitation(String part) {
+        String[] parts = part.split(" ", 3);
+        String type = parts[0];
+        String status = parts[1];
+
+        if (type.equals("ACCEPT")) {
+            if (status.equals("OK")) {
+                Customer friend = Util.deserializeObject(parts[2], new TypeReference<>() {
+                });
+                FriendGUI.getInstance().onAcceptStatus(true, friend);
+            } else {
+                FriendGUI.getInstance().onAcceptStatus(false, null);
+            }
+        } else {
+            int friendId = Integer.parseInt(parts[2]);
+            FriendGUI.getInstance().onRejectStatus(!status.equals("ERROR"), friendId);
+        }
+    }
 }

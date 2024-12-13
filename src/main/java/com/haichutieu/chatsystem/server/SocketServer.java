@@ -139,6 +139,10 @@ public class SocketServer {
                 return handleSearchUser(content);
             case "ADD_FRIEND":
                 return handleAddFriend(content);
+            case "GET_FRIEND_REQUEST":
+                return handleGetFriendRequest(content);
+            case "ANSWER_INVITATION":
+                return handleAnswerInvitation(content);
             case "SPAM":
                 return handleSpamReport(content);
             case "BLOCK":
@@ -185,17 +189,49 @@ public class SocketServer {
                 return handleDeleteAccount(content);
             case "EDIT_ACCOUNT":
                 return handleEditAccount(content);
-//            case "TOGGLE_ACCOUNT_STATUS" -> handleToggleAccountStatus(content);
-//            case "CHANGE_PASSWORD" -> handleChangePassword(content);
+            case "TOGGLE_ACCOUNT_STATUS":
+                return handleToggleLockAccount(content);
+            case "CHANGE_PASSWORD":
+                return handleChangePassword(content);
+//            case "RESET_PASSWORD":
+//                return handleResetPassword(content);
             case "LOGIN_HISTORY":
                 return handleLoginHistory(content);
 //            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
-//            case "SPAM_LIST" -> handleSpamList(content);
+            case "SPAM_LIST":
+                return handleSpamList();
+            case "LOCK_ACCOUNT":
+                return handleLockAccount(content);
+            case "FRIEND_COUNT":
+                return handleFriendCount();
 
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
         return null;
+    }
+
+    private String handleAnswerInvitation(String content) {
+        String[] parts = content.split(" ");
+        String type = parts[0];
+        int userID = Integer.parseInt(parts[1]);
+        int friendID = Integer.parseInt(parts[2]);
+
+        Customer friend = CustomerService.getCustomerByID(friendID);
+
+        if (type.equals("ACCEPT")) {
+            if (!FriendsService.acceptFriend(userID, friendID)) {
+                return "ANSWER_INVITATION ACCEPT ERROR " + friendID;
+            }
+            return "ANSWER_INVITATION ACCEPT OK " + Util.serializeObject(friend);
+        } else if (type.equals("REJECT")) {
+            if (!FriendsService.rejectFriend(userID, friendID)) {
+                return "ANSWER_INVITATION REJECT ERROR " + friendID;
+            }
+            return "ANSWER_INVITATION REJECT OK " + friendID;
+        }
+
+        return "ANSWER_INVITATION ERROR Invalid command";
     }
 
     private String handleAddFriend(String content) {
@@ -668,6 +704,58 @@ public class SocketServer {
             return "LOGIN_HISTORY USER OK " + Util.serializeObject(loginTimes);
         }
         return "LOGIN_HISTORY ERROR Incorrect command";
+    }
+
+    private String handleToggleLockAccount(String content) {
+        int id = Integer.parseInt(content);
+        if (!CustomerService.toggleLockStatusAccount(id)) {
+            return "TOGGLE_ACCOUNT_STATUS ERROR " + id;
+        }
+        return "TOGGLE_ACCOUNT_STATUS OK " + id;
+    }
+
+    private String handleChangePassword(String content) {
+        String[] parts = content.split(" ", 2);
+        int id = Integer.parseInt(parts[0]);
+        String password = parts[1];
+
+        if (!CustomerService.changePassword(id, password)) {
+            return "CHANGE_PASSWORD ERROR " + id;
+        }
+        return "CHANGE_PASSWORD OK " + id;
+    }
+
+    private String handleSpamList() {
+        List<SpamList> spamList = AdminService.fetchAllSpamList();
+        if (spamList == null) {
+            return "SPAM_LIST ERROR";
+        }
+        return "SPAM_LIST OK " + Util.serializeObject(spamList);
+    }
+
+    private String handleLockAccount(String id) {
+        int userID = Integer.parseInt(id);
+        if (!CustomerService.toggleLockStatusAccount(userID)) {
+            return "LOCK_ACCOUNT ERROR " + userID;
+        }
+        return "LOCK_ACCOUNT OK " + userID;
+    }
+
+    private String handleFriendCount() {
+        List<FriendCount> friendCountList = AdminService.fetchFriendCountList();
+        if (friendCountList == null) {
+            return "FRIEND_COUNT ERROR null";
+        }
+        return "FRIEND_COUNT OK " + Util.serializeObject(friendCountList);
+    }
+
+    private String handleGetFriendRequest(String content) {
+        int id = Integer.parseInt(content);
+        List<Customer> friendRequests = FriendsService.fetchFriendRequests(id);
+        if (friendRequests == null) {
+            return "GET_FRIEND_REQUEST ERROR Failed to fetch friend requests";
+        }
+        return "GET_FRIEND_REQUEST OK " + Util.serializeObject(friendRequests);
     }
 
     private static class SocketServerHelper {

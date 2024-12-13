@@ -7,7 +7,6 @@ import com.haichutieu.chatsystem.dto.Customer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -26,10 +25,7 @@ public class AccountGUI {
 
     @FXML
     private TextField email;
-
-    @FXML
-    private ImageView friendsBtn;
-
+    
     @FXML
     private TextField name;
 
@@ -75,9 +71,7 @@ public class AccountGUI {
     public void initialize() {
         // Make the screen (container) focusable
         screen.setFocusTraversable(true);
-        screen.setOnMouseClicked(event -> {
-            screen.requestFocus();
-        });
+        screen.setOnMouseClicked(event -> screen.requestFocus());
 
         save.setOnMouseClicked(event -> {
             Customer c = onChange();

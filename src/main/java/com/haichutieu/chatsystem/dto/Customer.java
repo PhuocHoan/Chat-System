@@ -40,6 +40,12 @@ public class Customer {
     public Customer() {
     }
 
+    public Customer(int id, String username, String name) {
+        this.id = id;
+        this.username = username;
+        this.name = name;
+    }
+
     public int getId() {
         return id;
     }

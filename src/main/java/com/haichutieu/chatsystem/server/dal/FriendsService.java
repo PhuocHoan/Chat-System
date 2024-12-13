@@ -1,6 +1,7 @@
 package com.haichutieu.chatsystem.server.dal;
 
 import com.haichutieu.chatsystem.dto.Customer;
+import com.haichutieu.chatsystem.dto.FriendList;
 import com.haichutieu.chatsystem.dto.SpamList;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -167,5 +168,74 @@ public class FriendsService {
             return null;
         }
 
+    }
+
+    public static List<Customer> fetchFriendRequests(int id) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                                select new Customer(f.customerID, c.username, c.name)
+                                     from FriendList f
+                                     join Customer c on c.id = f.customerID
+                                     where f.friendID = :id
+                                        and f.isFriend = false
+                            """, Customer.class)
+                    .setParameter("id", id)
+                    .getResultList();
+        } catch (Exception e) {
+            System.out.println("[ERROR] Failed to fetch friend requests: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean acceptFriend(int userID, int friendID) {
+        Transaction transaction;
+
+        // Get the friend_list row from db
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            FriendList friendList = session.createQuery("""
+                                select f
+                                     from FriendList f
+                                     where f.customerID = :id and f.friendID = :friendID
+                            """, FriendList.class)
+                    .setParameter("id", friendID)
+                    .setParameter("friendID", userID)
+                    .getSingleResult();
+
+            if (friendList == null) {
+                return false;
+            }
+
+            // Update the row to isFriend = true
+            transaction = session.beginTransaction();
+            friendList.setFriend(true);
+            session.merge(friendList);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            System.out.println("[ERROR] Failed to accept friend: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean rejectFriend(int userID, int friendID) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                                delete from FriendList f
+                                     where f.customerID = :id and f.friendID = :friendID
+                            """).setParameter("id", friendID)
+                    .setParameter("friendID", userID);
+            int result = q.executeUpdate();
+            transaction.commit();
+
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            System.out.println("[ERROR] Failed to reject friend: " + e.getMessage());
+            return false;
+        }
     }
 }

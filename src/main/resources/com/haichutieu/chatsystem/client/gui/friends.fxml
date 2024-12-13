@@ -145,7 +145,7 @@
                         <Font size="14.0" />
                      </font>
                   </Label>
-                  <TextField style="-fx-background-radius: 12;" />
+                  <TextField fx:id="friendRequestSearch" style="-fx-background-radius: 12;" />
                </children>
                <VBox.margin>
                   <Insets left="10.0" right="10.0" top="5.0" />
@@ -158,7 +158,7 @@
             </HBox>
             <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" prefHeight="1000.0" style="-fx-background-color: rgba(255, 255, 255, .0); -fx-background: transparent;" vbarPolicy="NEVER">
                <content>
-                  <VBox fx:id="friendListContainer1" alignment="TOP_CENTER" spacing="5.0" styleClass="vboxFrame" stylesheets="@../../stylesheets/style.css">
+                  <VBox fx:id="invitationContainer" alignment="TOP_CENTER" spacing="5.0" styleClass="vboxFrame" stylesheets="@../../stylesheets/style.css">
                      <padding>
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                      </padding>

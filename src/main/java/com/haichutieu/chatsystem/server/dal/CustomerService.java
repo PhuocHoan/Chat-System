@@ -8,6 +8,7 @@ import org.hibernate.query.Query;
 
 import java.util.List;
 
+
 public class CustomerService {
     public static boolean addCustomer(Customer customer) {
         Transaction transaction = null;
@@ -165,5 +166,47 @@ public class CustomerService {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static boolean toggleLockStatusAccount(int id) {
+        Transaction transaction = null;
+        int result = 0;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("update Customer " +
+                    "set isLock = case when isLock = true then false else true end " +
+                    "where id = :id"
+            ).setParameter("id", id);
+            result = q.executeUpdate();
+            transaction.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+                return false;
+            }
+        }
+        return result > 0;
+    }
+
+    public static boolean changePassword(int userId, String newHashedPassword) {
+        Transaction transaction = null;
+        int result = 0;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("update Customer " +
+                    "set password = :newHashedPassword " +
+                    "where id = :id"
+            ).setParameter("id", userId).setParameter("newHashedPassword", newHashedPassword);
+            result = q.executeUpdate();
+            transaction.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+                return false;
+            }
+        }
+        return result > 0;
     }
 }

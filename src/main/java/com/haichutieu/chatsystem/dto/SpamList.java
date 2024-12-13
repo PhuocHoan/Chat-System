@@ -22,7 +22,21 @@ public class SpamList {
     @Column(name = "time", nullable = false)
     private Timestamp time;
 
+    private String username;
+    private String userReported;
+    private String email;
+    private boolean isLocked;
+
     public SpamList() {
+    }
+
+    public SpamList(int personID, String username, String email, String userReported, Timestamp time) {
+        this.personID = personID;
+        this.time = time;
+        this.username = username;
+        this.userReported = userReported;
+        this.email = email;
+        this.isLocked = false;
     }
 
     public int getCustomerID() {
@@ -69,5 +83,37 @@ public class SpamList {
                 ", personID=" + personID +
                 ", time=" + time +
                 '}';
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getUserReported() {
+        return userReported;
+    }
+
+    public void setUserReported(String userReported) {
+        this.userReported = userReported;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public void setLocked(boolean locked) {
+        isLocked = locked;
     }
 }

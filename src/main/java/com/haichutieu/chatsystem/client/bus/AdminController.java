@@ -2,11 +2,10 @@ package com.haichutieu.chatsystem.client.bus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.gui.adminPanel.AdminLogin;
+import com.haichutieu.chatsystem.client.gui.adminPanel.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.ReportGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
-import com.haichutieu.chatsystem.dto.Customer;
-import com.haichutieu.chatsystem.dto.LoginTime;
-import com.haichutieu.chatsystem.dto.UserLoginTime;
+import com.haichutieu.chatsystem.dto.*;
 import com.haichutieu.chatsystem.util.Util;
 
 import java.util.List;
@@ -62,7 +61,7 @@ public class AdminController {
         }
     }
 
-    public static void onReceiveUserFriendList(String message) {
+    public static void handleReport(String message) {
         String[] parts = message.split(" ", 2);
         if (parts[0].equals("OK")) {
             try {
@@ -72,6 +71,55 @@ public class AdminController {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static void handleLockStatus(String message) {
+        String[] parts = message.split(" ", 2);
+        int id = Integer.parseInt(parts[1]);
+        UserManagement.getInstance().onToggleLockStatus(parts[0].equals("OK"), id);
+    }
+
+    public static void handleChangePassword(String message) {
+        String[] parts = message.split(" ", 2);
+        int id = Integer.parseInt(parts[1]);
+        UserManagement.getInstance().onChangePassword(parts[0].equals("OK"), id);
+    }
+
+    public static void handleSpamList(String part) {
+        String[] parts = part.split(" ", 2);
+        if (parts[0].equals("OK")) {
+            try {
+                List<SpamList> spamList = Util.deserializeObject(parts[1], new TypeReference<>() {
+                });
+                ReportGUI.getInstance().onSpamListReceived(true, spamList);
+            } catch (Exception e) {
+                e.printStackTrace();
+                ReportGUI.getInstance().onSpamListReceived(false, null);
+            }
+        } else {
+            ReportGUI.getInstance().onSpamListReceived(false, null);
+        }
+    }
+
+    public static void handleLockAccount(String part) {
+        String[] parts = part.split(" ", 2);
+        ReportGUI.getInstance().onLockStatusResponse(parts[0].equals("OK"), Integer.parseInt(parts[1]));
+    }
+
+    public static void handleFriendCount(String part) {
+        String[] parts = part.split(" ", 2);
+        if (parts[0].equals("OK")) {
+            try {
+                List<FriendCount> friendCountList = Util.deserializeObject(parts[1], new TypeReference<>() {
+                });
+                FriendGUI.getInstance().onFriendCountTable(friendCountList);
+            } catch (Exception e) {
+                e.printStackTrace();
+                FriendGUI.getInstance().onFriendCountTable(null);
+            }
+        } else {
+            FriendGUI.getInstance().onFriendCountTable(null);
         }
     }
 }

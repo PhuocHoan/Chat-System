@@ -37,7 +37,7 @@
                 <Image url="@../../assets/icons/message.png" />
               </image>
             </ImageView>
-            <ImageView fx:id="friendsBtn" fitHeight="29.0" fitWidth="29.0" layoutX="21.0" layoutY="20.0" onMouseClicked="#switchToFriendsTab" opacity="0.5" pickOnBounds="true" preserveRatio="true" styleClass="image">
+            <ImageView fitHeight="29.0" fitWidth="29.0" layoutX="21.0" layoutY="20.0" onMouseClicked="#switchToFriendsTab" opacity="0.5" pickOnBounds="true" preserveRatio="true" styleClass="image">
               <image>
                 <Image url="@../../assets/icons/friends.png" />
               </image>
