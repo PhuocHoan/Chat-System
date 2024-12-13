@@ -21,7 +21,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -115,14 +114,6 @@ public class ChatGUI {
             }
         });
 
-        friendsBtn.setOnMouseClicked(event -> {
-            try {
-                switchToFriendsTab(event);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
         // auto scroll to bottom in scrollpane
         chatArea.heightProperty().addListener((observable, oldValue, newValue) -> chatScrollPane.setVvalue((Double) newValue));
 
@@ -152,7 +143,7 @@ public class ChatGUI {
             }
         });
 
-        // search message
+        // search message field
         VBox searchResultsBox = new VBox();
         searchResultsBox.setPrefWidth(732);
         searchResultsBox.setStyle("-fx-background-color: rgb(161, 112, 228);");
@@ -239,12 +230,7 @@ public class ChatGUI {
     }
 
     @FXML
-    public void switchToProfileTab() {
-
-    }
-
-    @FXML
-    void logout(MouseEvent event) {
+    void logout() {
         ChatAppController.offlineUser();
         SocketClient.getInstance().handleLogout();
         SceneController.scenes.clear();
@@ -257,9 +243,13 @@ public class ChatGUI {
     }
 
     @FXML
-    public void switchToFriendsTab(MouseEvent event) throws IOException {
-        SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
+    public void switchToFriendsTab() throws IOException {
         SceneController.setScene("friends");
+    }
+
+    @FXML
+    void switchToAccountTab() throws IOException {
+        SceneController.setScene("account");
     }
 
     private void addItemToChatList(ChatList item) {
@@ -421,6 +411,9 @@ public class ChatGUI {
         conversation.getStyleClass().add("conversation"); // styling for conversation
 
         conversation.setOnMouseClicked(event -> {
+            if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
+                return;
+            }
             content.setFill(Color.BLACK);
             avatar.setImage(new Image(Objects.requireNonNull(getClass().getResource(chat.isGroup ? "../../assets/group.png" : "../../assets/avatar.png")).toExternalForm()));
             avatar.setFitHeight(131);

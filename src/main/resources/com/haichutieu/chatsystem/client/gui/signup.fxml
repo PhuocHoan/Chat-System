@@ -172,7 +172,7 @@
                         <Insets bottom="10.0" />
                      </VBox.margin>
                   </PasswordField>
-                  <Label id="already" fx:id="alreadyAccount" onMouseClicked="#switchToLogin" prefHeight="22.0" prefWidth="162.0" styleClass="signup" text="Already got an account?">
+                  <Label id="already" onMouseClicked="#switchToLogin" prefHeight="22.0" prefWidth="162.0" styleClass="signup" text="Already got an account?">
                      <VBox.margin>
                         <Insets top="5.0" />
                      </VBox.margin>
@@ -184,7 +184,7 @@
                   </HBox>
                </children>
             </VBox>
-            <Button fx:id="button" mnemonicParsing="false" onMouseClicked="#register" prefHeight="50.0" prefWidth="411.0" styleClass="signup" text="Register">
+            <Button mnemonicParsing="false" onMouseClicked="#register" prefHeight="50.0" prefWidth="411.0" styleClass="signup" text="Register">
                <VBox.margin>
                   <Insets />
                </VBox.margin>

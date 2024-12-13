@@ -5,27 +5,8 @@
 
 <hibernate-configuration>
     <session-factory>
-        <!-- Database connection settings -->
-        <property name="hibernate.connection.provider_class">
-            org.hibernate.hikaricp.internal.HikariCPConnectionProvider
-        </property>
-        <property name="hibernate.hikari.dataSourceClassName">
-            org.postgresql.ds.PGSimpleDataSource
-        </property>
-        <property name="hibernate.hikari.dataSource.url">
-            jdbc:postgresql://db-chatsystem-chat-system-java.e.aivencloud.com:15443/defaultdb?ssl=require
-        </property>
-        <property name="hibernate.hikari.dataSource.user">avnadmin</property>
-        <property name="hibernate.hikari.dataSource.password">AVNS_5GxNDrgTvuVB3-hSeac</property>
-        <property name="hibernate.transaction.coordinator_class">jdbc</property>
-
-        <!-- HikariCP-specific settings -->
-        <property name="hibernate.hikari.maximumPoolSize">20</property>
-        <property name="hibernate.hikari.minimumIdle">2</property>
-        <property name="hibernate.hikari.idleTimeout">300000</property>
-        <property name="hibernate.hikari.maxLifetime">1800000</property>
-        <property name="hibernate.hikari.connectionTimeout">30000</property>
-        <property name="hibernate.hikari.poolName">ChatSystemPool</property>
+        <!-- Load properties from external file -->
+        <property name="hibernate.properties.file">config.properties</property>
 
         <!-- Hibernate mappings -->
         <mapping class="com.haichutieu.chatsystem.dto.Customer"/>

@@ -6,7 +6,13 @@ import com.haichutieu.chatsystem.server.dal.*;
 import com.haichutieu.chatsystem.util.Util;
 import org.mindrot.jbcrypt.BCrypt;
 
+import javax.mail.Message;
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
@@ -127,6 +133,8 @@ public class SocketServer {
                 return handleRegister(content, clientChannel);
             case "LOGIN":
                 return handleLogin(content, clientChannel);
+            case "RESET_PASSWORD":
+                return handleForgotPassword(content);
             case "SEARCH_USER":
                 return handleSearchUser(content);
             case "ADD_FRIEND":
@@ -157,6 +165,8 @@ public class SocketServer {
                 break;
             case "REMOVE_ALL_MESSAGE_ME":
                 return removeAllMessageMe(content);
+            case "UPDATE_ACCOUNT":
+                return updateAccount(content);
             case "GET_FRIEND_LIST":
                 return handleGetFriendList(content);
             case "UNFRIEND":
@@ -201,7 +211,7 @@ public class SocketServer {
     private String handleRegister(String user, AsynchronousSocketChannel clientChannel) {
         String[] parts = user.split(" ", 2);
         // If the text field still has class "error"
-        if (Objects.equals(parts[0], "ERROR")) {
+        if (parts[0].equals("ERROR")) {
             return "REGISTER ERROR Please fill in the fields below.";
         }
         List<String> fields;
@@ -291,6 +301,74 @@ public class SocketServer {
         });
 
         return "LOGIN " + customerContent + " END User " + customer.getUsername() + " is online now"; // END is defined as the end of the data sending
+    }
+
+    private String handleForgotPassword(String message) {
+        String[] parts = message.split(" ", 2);
+        // If the text field still has class "error"
+        if (parts[0].equals("ERROR")) {
+            return "RESET_PASSWORD ERROR Please fill in the field below.";
+        }
+        String emailAddress = parts[1];
+        Customer c = CustomerService.getCustomerByEmail(emailAddress);
+        if (c == null) {
+            return "RESET_PASSWORD ERROR Email does not exist";
+        }
+        String randomPassword = randomPassword();
+        String hashedPassword = BCrypt.hashpw(randomPassword, BCrypt.gensalt(10));
+        c.setPassword(hashedPassword);
+        if (!CustomerService.editCustomer(c)) {
+            return "RESET_PASSWORD ERROR There is an error when reset password";
+        }
+        sendEmailResetPassword(emailAddress, randomPassword);
+        return "RESET_PASSWORD Reset password successfully";
+    }
+
+    // send mail to user email to reset password
+    void sendEmailResetPassword(String emailAddress, String content) {
+        Properties props = new Properties();
+        try (InputStream input = HibernateUtil.class.getClassLoader().getResourceAsStream("com/haichutieu/chatsystem/config.properties")) {
+            props.load(input);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String emailUsername = props.getProperty("email.username");
+        String emailPassword = props.getProperty("email.password");
+
+        Properties mailProps = new Properties();
+        mailProps.put("mail.smtp.auth", "true");
+        mailProps.put("mail.smtp.starttls.enable", "true");
+        mailProps.put("mail.smtp.host", "smtp.gmail.com");
+        mailProps.put("mail.smtp.port", "587");
+        Session session = Session.getInstance(mailProps, new javax.mail.Authenticator() {
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(emailUsername, emailPassword);
+            }
+        });
+        try {
+            MimeMessage msg = new MimeMessage(session);
+            msg.setFrom(new InternetAddress("admin@2chutieu.com", "2chutieu.com Admin"));
+            msg.addRecipient(Message.RecipientType.TO, new InternetAddress(emailAddress, "user"));
+            msg.setSubject("[2 chu tieu chat application][Reset Password]");
+            msg.setText("Your new password is: " + content);
+            Transport.send(msg);
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // random password with length = 8 and each character is (A-Z, a-z, 0-9)
+    String randomPassword() {
+        int leftLimit = 48; // numeral '0'
+        int rightLimit = 122; // letter 'z'
+        int targetStringLength = 8;
+        Random random = new Random();
+
+        return random.ints(leftLimit, rightLimit + 1)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
+                .limit(targetStringLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
     }
 
     private String getChatList(String id) {
@@ -423,6 +501,34 @@ public class SocketServer {
             throw new RuntimeException(e);
         }
         return "REMOVE_ALL_MESSAGE_ME Remove all message on your side successfully";
+    }
+
+    private String updateAccount(String user) {
+        Customer c;
+        try {
+            c = Util.deserializeObject(user, new TypeReference<>() {
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        if (CustomerService.getCustomerByUsername(c.getUsername()) != null) {
+            return "UPDATE_ACCOUNT ERROR Username already exists";
+        }
+        if (CustomerService.getCustomerByEmail(c.getEmail()) != null) {
+            return "UPDATE_ACCOUNT ERROR Email already exists";
+        }
+
+        if (c.getPassword() != null) {
+            String password = c.getPassword();
+            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
+            c.setPassword(hashedPassword);
+        }
+
+        if (CustomerService.updateCustomer(c)) {
+            return "UPDATE_ACCOUNT " + Util.serializeObject(c) + " END " + "Update account successfully";
+        } else {
+            return "UPDATE_ACCOUNT ERROR There is error in update account";
+        }
     }
 
     private String handleGetFriendList(String content) {

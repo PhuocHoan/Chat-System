@@ -94,6 +94,9 @@ public class SocketClient {
             case "LOGIN":
                 handleLogin(parts[1]);
                 break;
+            case "RESET_PASSWORD":
+                handleForgotPassword(parts[1]);
+                break;
             case "CHAT_LIST":
                 getChatList(parts[1]);
                 break;
@@ -123,6 +126,9 @@ public class SocketClient {
                 break;
             case "REMOVE_ALL_MESSAGE_ME":
                 removeAllMessageMe(parts[1]);
+                break;
+            case "UPDATE_ACCOUNT":
+                updateAccount(parts[1]);
                 break;
             case "OFFLINE":
                 handleOffline(parts[1]);
@@ -179,6 +185,10 @@ public class SocketClient {
         AuthController.handleLogin(message);
     }
 
+    private void handleForgotPassword(String message) {
+        AuthController.handleForgotPassword(message);
+    }
+
     private void getChatList(String message) {
         ChatAppController.handleChatList(message);
     }
@@ -217,6 +227,10 @@ public class SocketClient {
 
     private void removeAllMessageMe(String message) {
         System.out.println(message);
+    }
+
+    private void updateAccount(String message) {
+        AuthController.handleUpdateAccount(message);
     }
 
     private void handleOffline(String message) {

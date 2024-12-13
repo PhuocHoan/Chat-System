@@ -53,6 +53,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:2.0.16'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2' // json mapper
+
+    implementation 'com.sun.mail:javax.mail:1.6.2'
 }
 
 test {

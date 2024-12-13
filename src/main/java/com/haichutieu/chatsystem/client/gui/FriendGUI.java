@@ -58,6 +58,11 @@ public class FriendGUI {
 
     @FXML
     public void initialize() {
+        // Make the screen (container) focusable
+        screen.setFocusTraversable(true);
+        screen.setOnMouseClicked(event -> {
+            screen.requestFocus();
+        });
         // Fetch for initial friend list
         onlineFriendIDs = Set.of();
         friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
@@ -67,13 +72,32 @@ public class FriendGUI {
     }
 
     @FXML
-    public void switchToProfileTab() {
-
+    void switchToAccountTab() {
+        SceneController.setScene("account");
     }
 
     @FXML
-    public void switchToChatTab() {
+    void switchToChatTab() {
         SceneController.setScene("chat");
+    }
+
+    @FXML
+    void logout() {
+        ChatGUI.getInstance().logout();
+    }
+
+    @FXML
+    private void searchForUsers() {
+        String prompt = userSearchField.getText();
+        if (prompt.isBlank()) {
+            return;
+        }
+
+        userListContainer.getChildren().removeAll();
+        userListContainer.getChildren().add(friendListLoading);
+
+        // SEARCH_USER <userId> <prompt>
+        SocketClient.getInstance().sendMessages("SEARCH_USER " + SessionManager.getInstance().getCurrentUser().getId() + " " + prompt);
     }
 
     public void onReceiveFriendList(boolean success, List<Customer> friendList) {
@@ -371,20 +395,6 @@ public class FriendGUI {
             alert.setHeaderText(b ? "User has been reported for spam." : "Failed to report user for spam.");
             alert.showAndWait();
         });
-    }
-
-    @FXML
-    private void searchForUsers() {
-        String prompt = userSearchField.getText();
-        if (prompt.isBlank()) {
-            return;
-        }
-
-        userListContainer.getChildren().removeAll();
-        userListContainer.getChildren().add(friendListLoading);
-
-        // SEARCH_USER <userId> <prompt>
-        SocketClient.getInstance().sendMessages("SEARCH_USER " + SessionManager.getInstance().getCurrentUser().getId() + " " + prompt);
     }
 
     public void onUserSearch(boolean found, List<Customer> users) {

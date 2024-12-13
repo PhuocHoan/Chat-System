@@ -4,9 +4,10 @@ import com.haichutieu.chatsystem.client.bus.AuthController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -18,14 +19,9 @@ import java.util.function.UnaryOperator;
 public class SignupGUI {
 
     private static SignupGUI instance;
-    @FXML
-    private Label alreadyAccount;
 
     @FXML
     private VBox fieldContainer;
-
-    @FXML
-    private Button button;
 
     @FXML
     private PasswordField confirmPassword;
@@ -141,12 +137,12 @@ public class SignupGUI {
     }
 
     @FXML
-    void switchToLogin(MouseEvent event) {
+    void switchToLogin() {
         SceneController.setScene("login");
     }
 
     @FXML
-    void register(MouseEvent event) {
+    void register() {
         handleRegister();
     }
 
@@ -181,6 +177,8 @@ public class SignupGUI {
             if (!message.startsWith("ERROR")) {
                 try {
                     SceneController.addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
+                    SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
+                    SceneController.addScene("account", "gui/account.fxml", "../stylesheets/style.css");
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

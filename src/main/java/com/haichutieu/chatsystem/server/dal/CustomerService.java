@@ -34,14 +34,14 @@ public class CustomerService {
                 session.delete(customer);
             }
             transaction.commit();
+            return true;
         } catch (Exception e) {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
-                return false;
             }
             e.printStackTrace();
+            return false;
         }
-        return true;
     }
 
     public static boolean editCustomer(Customer customer) {
@@ -50,16 +50,52 @@ public class CustomerService {
             transaction = session.beginTransaction();
             session.merge(customer);
             transaction.commit();
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Loi roi!");
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
+            e.printStackTrace();
             return false;
         }
-        System.out.println("OK roi!");
-        return true;
+    }
+
+    public static boolean updateCustomer(Customer customer) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Customer existingCustomer = session.get(Customer.class, customer.getId());
+            if (customer.getUsername() != null) {
+                existingCustomer.setUsername(customer.getUsername());
+            }
+            if (customer.getPassword() != null) {
+                existingCustomer.setPassword(customer.getPassword());
+            }
+            if (customer.getName() != null) {
+                existingCustomer.setName(customer.getName());
+            }
+            if (customer.getAddress() != null) {
+                existingCustomer.setAddress(customer.getAddress());
+            }
+            if (customer.getBirthdate() != null) {
+                existingCustomer.setBirthdate(customer.getBirthdate());
+            }
+            if (customer.getSex() != null) {
+                existingCustomer.setSex(customer.getSex());
+            }
+            if (customer.getEmail() != null) {
+                existingCustomer.setEmail(customer.getEmail());
+            }
+            session.update(existingCustomer);
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static Customer getCustomerByID(int userID) {
