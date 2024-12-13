@@ -133,6 +133,12 @@ public class SocketClient {
             case "ADD_FRIEND":
                 FriendsController.handleAddFriend(parts[1]);
                 break;
+            case "GET_FRIEND_REQUEST":
+                FriendsController.handleAcceptFriend(parts[1]);
+                break;
+            case "ANSWER_INVITATION":
+                FriendsController.handleAnswerInvitation(parts[1]);
+                break;
             case "UNFRIEND":
                 FriendsController.handleUnfriend(parts[1]);
                 break;
@@ -162,6 +168,20 @@ public class SocketClient {
             case "LOGIN_HISTORY":
                 AdminController.handleLoginHistory(parts[1]);
                 break;
+            case "TOGGLE_ACCOUNT_STATUS":
+                AdminController.handleLockStatus(parts[1]);
+                break;
+            case "CHANGE_PASSWORD":
+                AdminController.handleChangePassword(parts[1]);
+                break;
+            case "SPAM_LIST":
+                AdminController.handleSpamList(parts[1]);
+                break;
+            case "LOCK_ACCOUNT":
+                AdminController.handleLockAccount(parts[1]);
+                break;
+            case "FRIEND_COUNT":
+                AdminController.handleFriendCount(parts[1]);
         }
     }
 

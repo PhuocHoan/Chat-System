@@ -28,7 +28,7 @@ import static javafx.geometry.VPos.*;
 public class FriendGUI {
 
     private static FriendGUI instance;
-    private final ProgressIndicator friendListLoading = new ProgressIndicator();
+    private final ProgressIndicator loading = new ProgressIndicator();
     @FXML
     private GridPane screen;
     @FXML
@@ -36,7 +36,11 @@ public class FriendGUI {
     @FXML
     private VBox userListContainer;
     @FXML
+    private VBox invitationContainer;
+    @FXML
     private TextField friendSearchField;
+    @FXML
+    private TextField friendRequestSearch;
     @FXML
     private ChoiceBox<String> statusFilter;
     @FXML
@@ -47,6 +51,9 @@ public class FriendGUI {
     private ObservableList<Customer> friends = null;
     private FilteredList<Customer> filteredFriends;
     private Set<Integer> onlineFriendIDs;
+
+    private ObservableList<Customer> friendInvitations = null;
+    private FilteredList<Customer> filteredFriendInvitations;
 
     public FriendGUI() {
         instance = this;
@@ -60,10 +67,13 @@ public class FriendGUI {
     public void initialize() {
         // Fetch for initial friend list
         onlineFriendIDs = Set.of();
-        friendListLoading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
-        friendContainer.getChildren().add(friendListLoading);
+        loading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+        friendContainer.getChildren().add(loading);
+        invitationContainer.getChildren().add(loading);
         long userId = SessionManager.getInstance().getCurrentUser().getId();
         SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
+        SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
+
     }
 
     @FXML
@@ -79,13 +89,13 @@ public class FriendGUI {
     public void onReceiveFriendList(boolean success, List<Customer> friendList) {
         Platform.runLater(() -> {
             if (!success) {
-                friendContainer.getChildren().remove(friendListLoading);
+                friendContainer.getChildren().remove(loading);
                 friendContainer.getChildren().add(new Label("Failed to fetch friend list."));
                 return;
             }
 
             if (friendList.isEmpty()) {
-                friendContainer.getChildren().remove(friendListLoading);
+                friendContainer.getChildren().remove(loading);
                 friendContainer.getChildren().add(new Label("You have no friends yet."));
                 return;
             }
@@ -93,9 +103,7 @@ public class FriendGUI {
             friends = FXCollections.observableArrayList(friendList);
             filteredFriends = new FilteredList<>(friends, p -> true);
 
-            System.out.println("This is it");
             for (int id : SessionManager.getInstance().onlineUsers) {
-                System.out.println("This is it " + id);
                 if (friends.stream().anyMatch(f -> f.getId() == id)) {
                     this.onlineFriendIDs.add(id);
                 }
@@ -381,7 +389,7 @@ public class FriendGUI {
         }
 
         userListContainer.getChildren().removeAll();
-        userListContainer.getChildren().add(friendListLoading);
+        userListContainer.getChildren().add(loading);
 
         // SEARCH_USER <userId> <prompt>
         SocketClient.getInstance().sendMessages("SEARCH_USER " + SessionManager.getInstance().getCurrentUser().getId() + " " + prompt);
@@ -396,14 +404,14 @@ public class FriendGUI {
             }
 
             for (Customer user : users) {
-                GridPane userCard = createUserCard(user);
+                GridPane userCard = createUserCard(user, "FIND");
                 userListContainer.getChildren().add(userCard);
             }
         });
 
     }
 
-    private GridPane createUserCard(Customer user) {
+    private GridPane createUserCard(Customer user, String type) {
         GridPane userCard = new GridPane();
         userCard.setPrefHeight(70);
 
@@ -444,27 +452,123 @@ public class FriendGUI {
         GridPane.setMargin(statusText, new Insets(2, 0, 0, 0));
         GridPane.setValignment(statusText, TOP);
 
+        if (type.equals("FIND")) {
+            MenuButton actions = createActionsMenu(user);
+            userCard.add(actions, 1, 0, 1, 2);
+            GridPane.setValignment(actions, CENTER);
+            GridPane.setHalignment(actions, HPos.CENTER);
+        } else {
+            Button addFriendButton = new Button("Accept");
+            addFriendButton.setOnAction(e -> acceptInvitation(user));
+            userCard.add(addFriendButton, 1, 0);
+            GridPane.setValignment(addFriendButton, CENTER);
+            GridPane.setHalignment(addFriendButton, HPos.CENTER);
+
+            Button rejectButton = new Button("Reject");
+            rejectButton.setOnAction(e -> rejectInvitation(user));
+            userCard.add(rejectButton, 1, 1);
+            GridPane.setValignment(rejectButton, CENTER);
+            GridPane.setHalignment(rejectButton, HPos.CENTER);
+        }
+
+        return userCard;
+    }
+
+    private MenuButton createActionsMenu(Customer user) {
         MenuButton actions = new MenuButton("Actions");
         MenuItem m1 = new MenuItem("Chat");
-//        m1.setOnAction(e -> switchToChatTab(e));
+        m1.setOnAction(e -> {});
         MenuItem m2 = new MenuItem("New Group");
         m2.setOnAction(e -> createNewGroup(user));
         MenuItem m3 = new MenuItem("Add Friend");
         m3.setOnAction(e -> addFriend(user));
         MenuItem m4 = new MenuItem("Report Spam");
         m4.setOnAction(e -> reportSpam(user));
-
         actions.getItems().addAll(m1, m2, m3, m4);
-
-        userCard.add(actions, 1, 0, 1, 2);
-        GridPane.setValignment(actions, CENTER);
-        GridPane.setHalignment(actions, HPos.CENTER);
-
-        return userCard;
+        return actions;
     }
 
     private void addFriend(Customer user) {
         // ADD_FRIEND <userId> <friendId>
         SocketClient.getInstance().sendMessages("ADD_FRIEND " + SessionManager.getInstance().getCurrentUser().getId() + " " + user.getId());
+    }
+
+    public void onReceiveFriendRequestList(boolean success, List<Customer> invitationList) {
+        Platform.runLater(() -> {
+            if (!success) {
+                friendContainer.getChildren().remove(loading);
+                friendContainer.getChildren().add(new Label("Failed to fetch friend requests."));
+                return;
+            }
+
+            if (invitationList.isEmpty()) {
+                invitationContainer.getChildren().remove(loading);
+                invitationContainer.getChildren().add(new Label("You have no friend requests yet."));
+                return;
+            }
+
+            friendInvitations = FXCollections.observableArrayList(invitationList);
+            filteredFriendInvitations = new FilteredList<>(friendInvitations, p -> true);
+
+            // Bind TextField to FilteredList
+            friendRequestSearch.textProperty().addListener((obs, oldValue, newValue) -> {
+                filteredFriendInvitations.setPredicate(friend -> friend.getName().toLowerCase().contains(newValue.toLowerCase()));
+                displayFriendInvitations();
+            });
+
+            displayFriendInvitations();
+        });
+    }
+
+    private void displayFriendInvitations() {
+        invitationContainer.getChildren().clear();
+
+        for (Customer customer : filteredFriendInvitations) {
+            GridPane friendPane = createUserCard(customer, "INVITATION");
+            invitationContainer.getChildren().add(friendPane);
+        }
+    }
+
+    private void rejectInvitation(Customer user) {
+        // REJECT_INVITATION <userId> <friendId>
+        SocketClient.getInstance().sendMessages("ANSWER_INVITATION REJECT " + SessionManager.getInstance().getCurrentUser().getId() + " " + user.getId());
+    }
+
+    public void onRejectStatus(boolean success, int friendId) {
+        Platform.runLater(() -> {
+            if (!success) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("ERROR Failed to reject friend request.");
+                alert.setContentText("Please try again later.");
+                alert.show();
+            }
+
+            friendInvitations.removeIf(f -> f.getId() == friendId);
+            displayFriendInvitations();
+        });
+    }
+
+    private void acceptInvitation(Customer user) {
+        // ACCEPT_INVITATION <userId> <friendId>
+        SocketClient.getInstance().sendMessages("ANSWER_INVITATION ACCEPT " + SessionManager.getInstance().getCurrentUser().getId() + " " + user.getId());
+
+    }
+
+    public void onAcceptStatus(boolean success, Customer friend) {
+        Platform.runLater(() -> {
+            if (!success) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("ERROR Failed to accept friend request.");
+                alert.setContentText("Please try again later.");
+                alert.show();
+            }
+
+            friendInvitations.remove(friend);
+            friends.add(friend);
+            displayFriendInvitations();
+            displayFriends();
+        });
     }
 }

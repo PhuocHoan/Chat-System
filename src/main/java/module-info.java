@@ -7,6 +7,7 @@ module system.chatsystem {
     requires jdk.httpserver;
     requires jbcrypt;
     requires com.fasterxml.jackson.databind;
+    requires java.desktop;
 
 
     exports com.haichutieu.chatsystem.client.gui;
