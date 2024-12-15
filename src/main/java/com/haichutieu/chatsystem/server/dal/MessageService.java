@@ -1,6 +1,9 @@
 package com.haichutieu.chatsystem.server.dal;
 
-import com.haichutieu.chatsystem.dto.*;
+import com.haichutieu.chatsystem.dto.ChatList;
+import com.haichutieu.chatsystem.dto.Message;
+import com.haichutieu.chatsystem.dto.MessageConversation;
+import com.haichutieu.chatsystem.dto.MessageDisplay;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -73,7 +76,7 @@ public class MessageService {
     }
 
     // get list member id of a conversation, for user
-    public static List<Integer> getMemberConversationUser(long conversationID) {
+    public static List<Integer> getMemberConversation(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select customerID 
@@ -87,28 +90,13 @@ public class MessageService {
     }
 
     // get list member id of a conversation except me
-    public static List<Integer> getMemberConversationUser(long conversationID, int userID) {
+    public static List<Integer> getMemberConversation(long conversationID, int userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select customerID 
                         from ConversationMember 
                         where conversationID = :conversationID and customerID <> :userID
                     """, Integer.class).setParameter("conversationID", conversationID).setParameter("userID", userID).getResultList();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // get list member of a conversation, for admin
-    public static List<MemberConversation> getMemberConversation(long conversationID) {
-        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
-            return session.createQuery("""
-                        select c.name, cm.isAdmin
-                        from ConversationMember cm join Customer c
-                        on cm.customerID = c.id
-                        where cm.conversationID = :conversationID
-                    """, MemberConversation.class).setParameter("conversationID", conversationID).getResultList();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -132,10 +120,10 @@ public class MessageService {
     public static List<MessageConversation> getMessageConversation(long conversationID, int userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createNativeQuery("""
-                    select m.id, m.conversation_id, m.customer_id, c.name, m.time, m.message 
-                    from message m 
+                    select m.id, m.conversation_id, m.customer_id, c.name, m.time, m.message
+                    from message m
                     join (select message_id from message_display where customer_id = :userID) md
-                    on m.id = md.message_id join customer c on m.customer_id = c.id
+                    on m.id = md.message_id left join customer c on m.customer_id = c.id
                     where m.conversation_id = :conversationID
                     order by m.time
                     """, MessageConversation.class).setParameter("conversationID", conversationID).setParameter("userID", userID).getResultList();

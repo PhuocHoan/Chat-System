@@ -28,7 +28,6 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.*;
 import javafx.util.Duration;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -41,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ChatGUI {
     private static ChatGUI instance;
-    public ObservableList<ChatList> conversations = FXCollections.observableArrayList(); // conversations is in chat
+    public ObservableList<ChatList> conversations = FXCollections.observableArrayList(); // conversations are in chat
     public Map<Long, GridPane> conversationGridPaneMap = new HashMap<>(); // Map<conversation_id, GridPane>
     public ObservableList<MessageConversation> messages = FXCollections.observableArrayList();
     public Map<Long, VBox> messageVBoxMap = new HashMap<>(); // Map<message_id, VBox>
@@ -231,11 +230,7 @@ public class ChatGUI {
         ChatAppController.offlineUser();
         SocketClient.getInstance().handleLogout();
         SceneController.scenes.clear();
-        try {
-            SceneController.initScenes();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        SceneController.initScenes();
         SceneController.setScene("login");
     }
 
@@ -268,7 +263,12 @@ public class ChatGUI {
 
     private void addItemToMessageConversation(MessageConversation message) {
         Platform.runLater(() -> {
-            VBox item = message.senderName.equals(SessionManager.getInstance().getCurrentUser().getName()) ? createMessageTo(message) : createMessageFrom(message);
+            VBox item;
+            if (message.senderName == null) {
+                item = createMessageSystem(message);
+            } else {
+                item = message.senderName.equals(SessionManager.getInstance().getCurrentUser().getName()) ? createMessageTo(message) : createMessageFrom(message);
+            }
             messageVBoxMap.put(message.id, item);
             chatArea.getChildren().add(item);
         });
@@ -341,8 +341,8 @@ public class ChatGUI {
 
         Text content = new Text();
         String text;
-        if (chat.senderName == null) {
-            text = "";
+        if (chat.senderName == null && !chat.latestMessage.isEmpty()) {
+            text = chat.latestMessage;
         } else if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
             text = "You: " + chat.latestMessage;
         } else {
@@ -399,7 +399,7 @@ public class ChatGUI {
                 headerStatus.setText(status);
                 rightSideBarStatus.setText(status);
             }
-        }, 1, 5, TimeUnit.SECONDS); // delay first 1s
+        }, 2, 5, TimeUnit.SECONDS); // delay first 2s
 
         conversationInfo.getChildren().addAll(conversationName, conversationTimeStamp);
 
@@ -474,6 +474,19 @@ public class ChatGUI {
         hbox.setAlignment(Pos.CENTER_LEFT);
         Text sender = new Text(message.senderName);
         return new VBox(sender, hbox);
+    }
+
+    // create a message style from others to user
+    public VBox createMessageSystem(MessageConversation message) {
+        Text messageSystem = new Text(message.message);
+        messageSystem.setFont(Font.font(14));
+        messageSystem.setFontSmoothingType(FontSmoothingType.LCD);
+        messageSystem.getStyleClass().add("message-system");
+        TextFlow textFlow = new TextFlow(messageSystem);
+        textFlow.setPrefWidth(525);
+        textFlow.setPadding(new Insets(10, 10, 10, 10));
+        textFlow.setTextAlignment(TextAlignment.CENTER);
+        return new VBox(textFlow);
     }
 
     void onRemove(MessageConversation message) {

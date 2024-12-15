@@ -15,15 +15,26 @@ public class SceneController {
     public static Stage primaryStage;
     public static HashMap<String, Scene> scenes = new HashMap<>();
 
-    public static void initScenes() throws IOException {
-        addScene("login", "gui/login.fxml", "../stylesheets/style.css");
-        addScene("register", "gui/signup.fxml", "../stylesheets/style.css");
-        addScene("forgotPassword", "gui/forgotPassword.fxml", "../stylesheets/style.css");
-        addScene("adminLogin", "gui/adminPanel/adminLogin.fxml", "../stylesheets/adminPanel.css");
+    public static void initScenes() {
+        try {
+            addScene("login", "gui/login.fxml", "../stylesheets/style.css");
+            addScene("register", "gui/signup.fxml", "../stylesheets/style.css");
+            addScene("forgotPassword", "gui/forgotPassword.fxml", "../stylesheets/style.css");
+            addScene("adminLogin", "gui/adminPanel/adminLogin.fxml", "../stylesheets/style.css");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public static void setPrimaryStage(Stage stage) {
+    public static void setPrimaryStage(Stage stage, String scene) {
         primaryStage = stage;
+        initScenes();
+        primaryStage.setTitle("Chat System");
+        setScene(scene);
+        primaryStage.setMinHeight(770);
+        primaryStage.setMinWidth(1280);
+        primaryStage.setMaximized(true);
+        primaryStage.show();
         primaryStage.setOnCloseRequest(e -> ChatAppController.offlineUser());
     }
 

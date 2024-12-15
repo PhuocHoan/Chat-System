@@ -1,13 +1,12 @@
 package com.haichutieu.chatsystem.client.bus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.haichutieu.chatsystem.client.gui.adminPanel.AdminLogin;
-import com.haichutieu.chatsystem.client.gui.adminPanel.FriendGUI;
-import com.haichutieu.chatsystem.client.gui.adminPanel.ReportGUI;
-import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
+import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.client.gui.adminPanel.*;
 import com.haichutieu.chatsystem.dto.*;
 import com.haichutieu.chatsystem.util.Util;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public class AdminController {
@@ -113,13 +112,53 @@ public class AdminController {
             try {
                 List<FriendCount> friendCountList = Util.deserializeObject(parts[1], new TypeReference<>() {
                 });
-                FriendGUI.getInstance().onFriendCountTable(friendCountList);
+                UserAndFriendGUI.getInstance().onFriendCountTable(friendCountList);
             } catch (Exception e) {
                 e.printStackTrace();
-                FriendGUI.getInstance().onFriendCountTable(null);
+                UserAndFriendGUI.getInstance().onFriendCountTable(null);
             }
         } else {
-            FriendGUI.getInstance().onFriendCountTable(null);
+            UserAndFriendGUI.getInstance().onFriendCountTable(null);
         }
+    }
+
+    // fetch all group, not dual group
+    public static void fetchGroupList() {
+        SocketClient.getInstance().sendMessages("FETCH_GROUP_LIST ALL");
+    }
+
+    // fetch all group, not dual group
+    public static void handleGroupList(String message) {
+        List<Conversation> groupList = Util.deserializeObject(message, new TypeReference<>() {
+        });
+        ChatGroup.getInstance().onFetchGroupList(groupList);
+    }
+
+    // fetch all member in group, not dual group
+    public static void fetchMemberList(Long conversationID) {
+        SocketClient.getInstance().sendMessages("FETCH_MEMBER_LIST " + conversationID);
+    }
+
+    // fetch all member in group, not dual group
+    public static void handleMemberList(String message) {
+        List<MemberConversation> memberList = Util.deserializeObject(message, new TypeReference<>() {
+        });
+        ChatGroup.getInstance().onFetchMemberList(memberList);
+    }
+
+    // fetch login user count list
+    public static void fetchOnlineUserCountList() {
+        SocketClient.getInstance().sendMessages("FETCH_ONLINE_USER_COUNT_LIST ALL");
+    }
+
+    // fetch login user count list with time range
+    public static void fetchOnlineUserCountList(Timestamp from, Timestamp to) {
+        SocketClient.getInstance().sendMessages("FETCH_ONLINE_USER_COUNT_TIME_RANGE_LIST " + from + " END " + to);
+    }
+
+    public static void handleOnlineUserCountList(String message) {
+        List<OnlineUserCount> onlineUserCount = Util.deserializeObject(message, new TypeReference<>() {
+        });
+        UserAndFriendGUI.getInstance().onOnlineUserTable(onlineUserCount);
     }
 }

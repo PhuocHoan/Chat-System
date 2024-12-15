@@ -37,10 +37,6 @@ public class SocketClient {
         return instance;
     }
 
-    public AsynchronousSocketChannel getClientChannel() {
-        return clientChannel;
-    }
-
     public void sendMessages(String message) {
         try {
             ByteBuffer buffer = ByteBuffer.wrap((message + "\n").getBytes());
@@ -89,52 +85,49 @@ public class SocketClient {
         switch (command) {
             // Commands for USERS
             case "REGISTER":
-                handleRegister(parts[1]);
+                AuthController.handleRegister(parts[1]);
                 break;
             case "LOGIN":
-                handleLogin(parts[1]);
+                AuthController.handleLogin(parts[1]);
                 break;
             case "RESET_PASSWORD":
-                handleForgotPassword(parts[1]);
+                AuthController.handleForgotPassword(parts[1]);
                 break;
             case "CHAT_LIST":
-                getChatList(parts[1]);
+                ChatAppController.handleChatList(parts[1]);
                 break;
             case "GET_ONLINE_USERS":
-                getOnlineUsers(parts[1]);
+                ChatAppController.handleOnlineUsers(parts[1]);
                 break;
             case "GET_ALL_MEMBER_CONVERSATION":
-                getAllMemberConversation(parts[1]);
+                ChatAppController.handleAllMemberConversation(parts[1]);
                 break;
-//            case "GET_MEMBER_CONVERSATION_ADMIN":
-//                getMemberConversationAdmin(parts[1]);
-//                break;
             case "GET_MESSAGE_CONVERSATION":
-                getMessageConversation(parts[1]);
+                ChatAppController.handleMessageConversation(parts[1]);
                 break;
             case "UPDATE_STATUS_CONVERSATION":
-                updateStatusConversation(parts[1]);
+                System.out.println(parts[1]);
                 break;
             case "MESSAGE":
-                handleMessage(parts[1]);
+                ChatAppController.receiveMessage(parts[1]);
                 break;
             case "REMOVE_MESSAGE_ME":
-                removeMessageMe(parts[1]);
+                System.out.println(parts[1]);
                 break;
             case "REMOVE_MESSAGE_ALL":
-                removeMessageAll(parts[1]);
+                ChatAppController.handleRemoveMessageAll(parts[1]);
                 break;
             case "REMOVE_ALL_MESSAGE_ME":
-                removeAllMessageMe(parts[1]);
+                System.out.println(parts[1]);
                 break;
             case "UPDATE_ACCOUNT":
-                updateAccount(parts[1]);
+                AuthController.handleUpdateAccount(parts[1]);
                 break;
             case "OFFLINE":
-                handleOffline(parts[1]);
+                ChatAppController.handleOfflineUser(parts[1]);
                 break;
             case "ONLINE":
-                handleOnline(parts[1]);
+                ChatAppController.handleGetOnlineUser(parts[1]);
                 break;
             case "GET_FRIEND_LIST":
                 FriendsController.fetchFriendList(parts[1]);
@@ -161,12 +154,18 @@ public class SocketClient {
                 FriendsController.handleBlock(parts[1]);
                 break;
 
-//            // Commands for ADMIN
+            // Commands for ADMIN
             case "LOGIN_ADMIN":
                 AdminController.handleLoginAdmin(parts[1]);
                 break;
             case "FETCH_ACCOUNT_LIST":
                 AdminController.fetchAccountList(parts[1]);
+                break;
+            case "FETCH_GROUP_LIST":
+                AdminController.handleGroupList(parts[1]);
+                break;
+            case "FETCH_MEMBER_LIST":
+                AdminController.handleMemberList(parts[1]);
                 break;
             case "ADD_ACCOUNT":
                 UserManagement.getInstance().onAddNewAccount(parts[1]);
@@ -194,78 +193,10 @@ public class SocketClient {
                 break;
             case "FRIEND_COUNT":
                 AdminController.handleFriendCount(parts[1]);
+                break;
+            case "FETCH_ONLINE_USER_COUNT_LIST":
+                AdminController.handleOnlineUserCountList(parts[1]);
+                break;
         }
-    }
-
-    private void handleRegister(String message) {
-        AuthController.handleRegister(message);
-    }
-
-    private void handleLogin(String message) {
-        AuthController.handleLogin(message);
-    }
-
-    private void handleForgotPassword(String message) {
-        AuthController.handleForgotPassword(message);
-    }
-
-    private void getChatList(String message) {
-        ChatAppController.handleChatList(message);
-    }
-
-    private void getOnlineUsers(String message) {
-        ChatAppController.handleOnlineUsers(message);
-    }
-
-    private void getAllMemberConversation(String message) {
-        ChatAppController.handleAllMemberConversation(message);
-    }
-
-//    private void getMemberConversationAdmin(String message) {
-//        ChatAppController.handleMemberConversationAdminServer(message);
-//    }
-
-    private void getMessageConversation(String message) {
-        ChatAppController.handleMessageConversation(message);
-    }
-
-    private void updateStatusConversation(String message) {
-        System.out.println(message);
-    }
-
-    private void handleMessage(String message) {
-        ChatAppController.receiveMessage(message);
-    }
-
-    private void removeMessageMe(String message) {
-        System.out.println(message);
-    }
-
-    private void removeMessageAll(String message) {
-        ChatAppController.handleRemoveMessageAll(message);
-    }
-
-    private void removeAllMessageMe(String message) {
-        System.out.println(message);
-    }
-
-    private void updateAccount(String message) {
-        AuthController.handleUpdateAccount(message);
-    }
-
-    private void handleOffline(String message) {
-        ChatAppController.handleOfflineUser(message);
-    }
-
-    private void handleOnline(String message) {
-        ChatAppController.handleGetOnlineUser(message);
-    }
-
-    private void handleGetFriendList(String message) {
-        FriendsController.fetchFriendList(message);
-    }
-
-    private void handleUnfriend(String message) {
-        FriendsController.handleUnfriend(message);
     }
 }

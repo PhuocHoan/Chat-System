@@ -5,19 +5,26 @@ import com.haichutieu.chatsystem.client.util.SceneController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
 
 import java.io.IOException;
+import java.util.function.UnaryOperator;
 
 public class AdminLogin {
     private static AdminLogin instance;
+
     @FXML
-    private TextField usernameField;
+    private TextField username;
+
     @FXML
-    private TextField passwordField;
+    private TextField password;
+
     @FXML
-    private Button submitButton;
+    private HBox screen;
+
     public AdminLogin() {
         instance = this;
     }
@@ -26,21 +33,44 @@ public class AdminLogin {
         return instance;
     }
 
+    @FXML
     public void initialize() {
-        submitButton.setOnAction(e -> {
-            String username = usernameField.getText();
-            String password = passwordField.getText();
-            if (username.isEmpty() || password.isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText("Empty fields");
-                alert.setContentText("Please fill in all fields");
-                alert.showAndWait();
-            } else {
-                // Send the username and password to the server
-                SocketClient.getInstance().sendMessages("LOGIN_ADMIN " + username + " " + password);
+        // Make the screen (container) focusable
+        screen.setFocusTraversable(true);
+        // Handle the enter key event
+        screen.setOnKeyReleased(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                handleLogin();
             }
         });
+
+        // When the screen is clicked, it gains focus, causing any TextField to lose focus
+        screen.setOnMouseClicked(event -> screen.requestFocus());
+
+        // limit text length in textField. Max length: 32
+        UnaryOperator<TextFormatter.Change> limitLength = c -> {
+            if (c.getControlNewText().length() > 32) {
+                return null;
+            }
+            return c;
+        };
+
+        username.setTextFormatter(new TextFormatter<>(limitLength));
+        password.setTextFormatter(new TextFormatter<>(limitLength));
+    }
+
+    @FXML
+    void login() {
+        handleLogin();
+    }
+
+    void handleLogin() {
+        if (username.getText().isEmpty() || password.getText().isEmpty()) {
+            showAlert("Error", "Empty fields", "Please fill in all fields");
+        } else {
+            // Send the username and password to the server
+            SocketClient.getInstance().sendMessages("LOGIN_ADMIN " + username.getText() + " " + password.getText());
+        }
     }
 
     private void showAlert(String title, String header, String content) {
@@ -61,10 +91,6 @@ public class AdminLogin {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                    SceneController.primaryStage.setMinHeight(770);
-                    SceneController.primaryStage.setMinWidth(1280);
-                    SceneController.primaryStage.setMaximized(true);
-                    SceneController.primaryStage.setResizable(true);
                     SceneController.setScene("adminPanel");
                     break;
                 case "INCORRECT":
@@ -74,12 +100,6 @@ public class AdminLogin {
                     showAlert("Error", "Access prohibited", "You do not have permission to access the admin panel");
                     break;
             }
-        });
-    }
-
-    public void onGetAccountsResponse(String response) {
-        Platform.runLater(() -> {
-
         });
     }
 }

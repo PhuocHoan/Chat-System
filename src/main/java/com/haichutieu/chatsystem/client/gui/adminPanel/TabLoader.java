@@ -4,6 +4,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.Pane;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 
 public class TabLoader {
@@ -17,11 +18,11 @@ public class TabLoader {
             }
 
             view = FXMLLoader.load(fileUrl);
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
         return view;
     }
 }
