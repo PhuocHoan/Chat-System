@@ -27,7 +27,7 @@ public class FriendGUI {
     private ObservableList<FriendCount> friendCounts;
     private FilteredList<FriendCount> filteredFriendCountList;
     private SortedList<FriendCount> sortedFriendCountList;
-
+    
     public FriendGUI() {
         instance = this;
     }
