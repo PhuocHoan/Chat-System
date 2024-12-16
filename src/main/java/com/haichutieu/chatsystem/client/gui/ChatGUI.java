@@ -427,13 +427,19 @@ public class ChatGUI {
             } else {
                 circle.setVisible(false);
             }
+        }, 2, 5, TimeUnit.SECONDS); // delay first 2s
+
+        scheduler.scheduleAtFixedRate(() -> {
             if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
                 String status = circle.isVisible() ? "Online" : "Offline";
                 headerStatus.setText(status);
-                rightSideBarStatus.setText(status);
-                rightSideBarStatusGroup.setText(status);
+                if (chat.isGroup) {
+                    rightSideBarStatusGroup.setText(status);
+                } else {
+                    rightSideBarStatus.setText(status);
+                }
             }
-        }, 2, 5, TimeUnit.SECONDS); // delay first 2s
+        }, 2, 200, TimeUnit.MILLISECONDS); // delay first 2s
 
         conversationInfo.getChildren().addAll(conversationName, conversationTimeStamp);
 
@@ -557,6 +563,7 @@ public class ChatGUI {
         Platform.runLater(() -> {
             mainChatContainer.setVisible(false);
             rightSideBar.setVisible(false);
+            rightSideBarGroup.setVisible(false);
         });
     }
 
