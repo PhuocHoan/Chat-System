@@ -3,10 +3,14 @@ package com.haichutieu.chatsystem.client.bus;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.gui.ChatGUI;
+import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
+import com.haichutieu.chatsystem.dto.MemberConversation;
 import com.haichutieu.chatsystem.dto.MessageConversation;
 import com.haichutieu.chatsystem.util.Util;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 import java.util.List;
 import java.util.Map;
@@ -69,11 +73,13 @@ public class ChatAppController {
     // receive an offline user from server
     public static void handleOfflineUser(String message) {
         SessionManager.getInstance().onlineUsers.remove(Integer.parseInt(message));
+        FriendsController.handleOfflineUser(message);
     }
 
     // receive an online user from server
     public static void handleGetOnlineUser(String message) {
         SessionManager.getInstance().onlineUsers.add(Integer.parseInt(message));
+        FriendsController.handleNewOnlineUser(message);
     }
 
     public static void getMessageConversation(long conversationID) {
@@ -146,5 +152,104 @@ public class ChatAppController {
         }
     }
 
+    public static void handleCreateGroup(String part) {
+        Platform.runLater(() -> {
+            if (part.startsWith("ERROR")) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Failed to create group.");
+                alert.show();
+            } else {
+                ChatList conversation;
+                try {
+                    conversation = Util.deserializeObject(part, new TypeReference<>() {
+                    });
+                    ChatGUI.getInstance().createGroup(conversation);
+                    if (part.startsWith("OK")) {
+                        SceneController.setScene("chat");
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
 
+    public static void addGroupMember(long conversationID, String json) {
+        SocketClient.getInstance().sendMessages("GROUP ADD_MEMBER " + conversationID + " " + json);
+    }
+
+    public static void removeGroupMember(long conversationID, int id) {
+        SocketClient.getInstance().sendMessages("GROUP REMOVE_MEMBER " + conversationID + " " + id);
+    }
+
+    public static void updateGroupName(long conversationID, String text) {
+        SocketClient.getInstance().sendMessages("GROUP UPDATE_NAME " + conversationID + " " + text);
+    }
+
+    public static void assignGroupAdmin(long conversationID, int id, boolean b) {
+        SocketClient.getInstance().sendMessages("GROUP ASSIGN_ADMIN " + conversationID + " " + id + " " + b);
+    }
+
+    public static void getAllMemberConversationCard(long conversationID) {
+        SocketClient.getInstance().sendMessages("GROUP GET_MEMBERS " + conversationID + " null");
+    }
+
+    public static void handleGroup(String part) {
+        String[] parts = part.split(" ", 4);
+        String status = parts[1];
+        long conversationID = Long.parseLong(parts[2]);
+
+        if (status.equals("ERROR")) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                switch (parts[0]) {
+                    case "ADD_MEMBER":
+                        alert.setHeaderText("Failed to add member to group.");
+                        break;
+                    case "REMOVE_MEMBER":
+                        alert.setHeaderText("Failed to remove member from group.");
+                        break;
+                    case "UPDATE_NAME":
+                        alert.setHeaderText("Failed to update group name.");
+                        break;
+                    case "ASSIGN_ADMIN":
+                        alert.setHeaderText("Failed to assign admin.");
+                        break;
+                    default:
+                        return;
+                }
+                alert.show();
+            });
+            return;
+        }
+
+        List<MemberConversation> members;
+        switch (parts[0]) {
+            case "ADD_MEMBER":
+                members = Util.deserializeObject(parts[3], new TypeReference<>() {
+                });
+                ChatGUI.getInstance().onAddGroupMember(conversationID, members);
+                break;
+            case "REMOVE_MEMBER":
+                members = Util.deserializeObject(parts[3], new TypeReference<>() {
+                });
+                ChatGUI.getInstance().onRemoveGroupMember(conversationID, members);
+                break;
+            case "UPDATE_NAME":
+                ChatGUI.getInstance().onUpdateGroupName(conversationID, parts[3]);
+                break;
+            case "GET_MEMBERS":
+                members = Util.deserializeObject(parts[3], new TypeReference<>() {
+                });
+                ChatGUI.getInstance().onGetConversationMembers(conversationID, members);
+                break;
+            case "ASSIGN_ADMIN":
+                members = Util.deserializeObject(parts[3], new TypeReference<>() {
+                });
+                ChatGUI.getInstance().onAssignGroupAdmin(conversationID, members);
+                break;
+        }
+    }
 }

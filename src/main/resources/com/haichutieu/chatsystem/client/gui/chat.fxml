@@ -82,7 +82,7 @@
                         </VBox>
                      </content>
                   </ScrollPane>
-                  <GridPane GridPane.rowIndex="2">
+                  <GridPane style="-fx-background-color: rgba(255, 255, 255, .7); -fx-background-radius: 0 0 12 12;" GridPane.rowIndex="2">
                     <columnConstraints>
                       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                     </columnConstraints>
@@ -99,6 +99,12 @@
                            </padding>
                         </TextField>
                      </children>
+                     <padding>
+                        <Insets left="10.0" right="10.0" />
+                     </padding>
+                     <GridPane.margin>
+                        <Insets bottom="5.0" />
+                     </GridPane.margin>
                   </GridPane>
                </children>
             </GridPane>
@@ -209,7 +215,13 @@
             <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
          </GridPane.margin>
          <children>
-            <ImageView fx:id="avatar" fitHeight="131.0" fitWidth="83.0" pickOnBounds="true" preserveRatio="true" />
+            <ImageView fitHeight="131.0" fitWidth="83.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../assets/avatar.png" />
+               </image>
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin></ImageView>
             <Text fx:id="rightSideBarName" strokeType="OUTSIDE" strokeWidth="0.0" text="Nguyen Van A">
                <font>
                   <Font name="System Bold" size="18.0" />
@@ -227,7 +239,7 @@
                <children>
                   <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@client/assets/icons/unfriend.png" />
+                        <Image url="@../../assets/icons/unfriend.png" />
                      </image>
                   </ImageView>
                   <Label text="Remove friend">
@@ -250,7 +262,7 @@
                <children>
                   <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@client/assets/icons/spam.png" />
+                        <Image url="@../../assets/icons/spam.png" />
                      </image>
                   </ImageView>
                   <Label text="Report spam">
@@ -273,7 +285,7 @@
                <children>
                   <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@client/assets/icons/block.png" />
+                        <Image url="@../../assets/icons/block.png" />
                      </image>
                   </ImageView>
                   <Label text="Block">
@@ -296,7 +308,7 @@
                <children>
                   <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@client/assets/icons/delete.png" />
+                        <Image url="@../../assets/icons/delete.png" />
                      </image>
                   </ImageView>
                   <Label text="Delete all messages">
@@ -319,6 +331,126 @@
          <padding>
             <Insets bottom="20.0" left="10.0" right="10.0" top="40.0" />
          </padding>
+      </VBox>
+      <VBox fx:id="rightSideBarGroup" alignment="TOP_CENTER" layoutX="1549.0" layoutY="18.0" prefHeight="200.0" prefWidth="100.0" spacing="2.0" style="-fx-background-color: rgba(255, 255, 255, .7); -fx-background-radius: 12;" GridPane.columnIndex="3">
+         <children>
+            <ImageView fitHeight="131.0" fitWidth="83.0" pickOnBounds="true" preserveRatio="true">
+               <VBox.margin>
+                  <Insets bottom="15.0" top="20.0" />
+               </VBox.margin>
+               <image>
+                  <Image url="@../../assets/group.png" />
+               </image>
+            </ImageView>
+            <Text fx:id="rightSideBarGroupName" strokeType="OUTSIDE" strokeWidth="0.0" text="Nguyen Van A">
+               <font>
+                  <Font name="System Bold" size="18.0" />
+               </font>
+            </Text>
+            <Text fx:id="rightSideBarStatusGroup" strokeType="OUTSIDE" strokeWidth="0.0" text="Online">
+               <font>
+                  <Font size="13.0" />
+               </font>
+            </Text>
+            <HBox fx:id="deleteAllMessagesGroup" alignment="CENTER_LEFT" prefHeight="51.0" prefWidth="237.0" style="-fx-background-radius: 12;" styleClass="main-chat">
+               <children>
+                  <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../assets/icons/delete.png" />
+                     </image>
+                  </ImageView>
+                  <Label text="Delete all messages">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font>
+                     <HBox.margin>
+                        <Insets left="10.0" right="10.0" />
+                     </HBox.margin>
+                  </Label>
+               </children>
+               <padding>
+                  <Insets left="20.0" right="20.0" />
+               </padding>
+               <VBox.margin>
+                  <Insets bottom="10.0" top="10.0" />
+               </VBox.margin>
+            </HBox>
+            <HBox fx:id="changeGroupName" alignment="CENTER_LEFT" prefHeight="51.0" prefWidth="237.0" spacing="5.0" style="-fx-background-radius: 12;" styleClass="main-chat" VBox.vgrow="NEVER">
+               <children>
+                  <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../assets/icons/pen.png" />
+                     </image>
+                  </ImageView>
+                  <Label text="Change Group Name">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font>
+                     <HBox.margin>
+                        <Insets left="10.0" right="10.0" />
+                     </HBox.margin>
+                  </Label>
+               </children>
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
+               <padding>
+                  <Insets left="20.0" right="20.0" />
+               </padding>
+            </HBox>
+            <HBox fx:id="addMember" alignment="CENTER_LEFT" layoutX="20.0" layoutY="214.0" prefHeight="51.0" prefWidth="237.0" spacing="5.0" style="-fx-background-radius: 12;" styleClass="main-chat">
+               <children>
+                  <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../../assets/icons/friends.png" />
+                     </image>
+                  </ImageView>
+                  <Label text="Add Member">
+                     <font>
+                        <Font name="System Bold" size="15.0" />
+                     </font>
+                     <HBox.margin>
+                        <Insets left="10.0" right="10.0" />
+                     </HBox.margin>
+                  </Label>
+               </children>
+               <padding>
+                  <Insets left="20.0" right="20.0" />
+               </padding>
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
+            </HBox>
+            <VBox prefHeight="200.0" prefWidth="100.0" VBox.vgrow="ALWAYS">
+               <VBox.margin>
+                  <Insets />
+               </VBox.margin>
+               <children>
+                  <Label text="Group Members">
+                     <font>
+                        <Font name="System Bold" size="16.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets bottom="15.0" />
+                     </VBox.margin>
+                  </Label>
+                  <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: rgba(255, 255, 255, .0); -fx-background: transparent;" vbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                     <content>
+                        <VBox fx:id="groupMemberContainer" spacing="15.0" />
+                     </content>
+                  </ScrollPane>
+               </children>
+               <padding>
+                  <Insets left="10.0" right="10.0" />
+               </padding>
+            </VBox>
+         </children>
+         <padding>
+            <Insets bottom="20.0" left="10.0" right="10.0" top="40.0" />
+         </padding>
+         <GridPane.margin>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </GridPane.margin>
       </VBox>
    </children>
    <padding>

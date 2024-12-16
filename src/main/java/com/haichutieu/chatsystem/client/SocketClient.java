@@ -120,6 +120,12 @@ public class SocketClient {
             case "REMOVE_ALL_MESSAGE_ME":
                 System.out.println(parts[1]);
                 break;
+            case "CREATE_GROUP":
+                ChatAppController.handleCreateGroup(parts[1]);
+                break;
+            case "GROUP":
+                ChatAppController.handleGroup(parts[1]);
+                break;
             case "UPDATE_ACCOUNT":
                 AuthController.handleUpdateAccount(parts[1]);
                 break;

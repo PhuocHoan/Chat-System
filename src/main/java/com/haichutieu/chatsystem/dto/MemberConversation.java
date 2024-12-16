@@ -4,6 +4,7 @@ package com.haichutieu.chatsystem.dto;
 public class MemberConversation {
     private int id;
     private String name;
+    private String username;
     private boolean isAdmin;
 
     public MemberConversation() {
@@ -12,6 +13,13 @@ public class MemberConversation {
     public MemberConversation(int id, String name, boolean isAdmin) {
         this.id = id;
         this.name = name;
+        this.isAdmin = isAdmin;
+    }
+
+    public MemberConversation(int id, String name, String username, boolean isAdmin) {
+        this.id = id;
+        this.name = name;
+        this.username = username;
         this.isAdmin = isAdmin;
     }
 
@@ -32,6 +40,14 @@ public class MemberConversation {
         this.name = name;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public boolean getIsAdmin() {
         return isAdmin;
     }
@@ -44,6 +60,7 @@ public class MemberConversation {
     public String toString() {
         return "MemberConversation{" +
                 "id=" + id +
+                "username=" + username +
                 "name=" + name +
                 ", isAdmin='" + isAdmin + '\'' +
                 '}';

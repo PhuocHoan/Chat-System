@@ -132,5 +132,6 @@ public class Statistics {
         // Place the label on middle of the bar
         StackPane node = (StackPane) data.getNode();
         node.getChildren().add(valueLabel);
+        valueLabel.setTranslateY(-10);
     }
 }

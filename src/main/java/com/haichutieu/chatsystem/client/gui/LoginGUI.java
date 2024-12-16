@@ -151,7 +151,7 @@ public class LoginGUI {
                     SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
                     SceneController.addScene("account", "gui/account.fxml", "../stylesheets/style.css");
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
                 SceneController.setScene("chat");
                 System.out.println(message);

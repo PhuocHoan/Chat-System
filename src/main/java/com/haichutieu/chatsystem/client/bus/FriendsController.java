@@ -3,16 +3,15 @@ package com.haichutieu.chatsystem.client.bus;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
+import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.util.Util;
 
 import java.util.List;
-import java.util.Set;
 
 public class FriendsController {
     public static void fetchFriendList(String message) {
         List<Customer> friends;
-        Set<Integer> onlineFriendIds = null;
 
         String[] parts = message.split(" ", 3);
 
@@ -55,8 +54,10 @@ public class FriendsController {
         int friendId = Integer.parseInt(parts[1]);
         if (parts[0].equals("ERROR")) {
             FriendGUI.getInstance().onUnfriendError(friendId);
-        } else {
+        } else if (parts[0].equals("OK")) {
             FriendGUI.getInstance().onUnfriendSuccess(friendId);
+        } else {
+            FriendGUI.getInstance().onUnfriendFrom(friendId);
         }
     }
 
@@ -94,10 +95,14 @@ public class FriendsController {
         String[] parts = part.split(" ", 2);
         if (parts[0].equals("ERROR")) {
             FriendGUI.getInstance().onReceiveFriendRequestList(false, null);
-        } else {
+        } else if (parts[0].equals("OK")) {
             List<Customer> friendRequests = Util.deserializeObject(parts[1], new TypeReference<>() {
             });
             FriendGUI.getInstance().onReceiveFriendRequestList(true, friendRequests);
+        } else {
+            Customer friend = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+            FriendGUI.getInstance().onReceiveNewFriendRequest(friend);
         }
     }
 
@@ -111,12 +116,39 @@ public class FriendsController {
                 Customer friend = Util.deserializeObject(parts[2], new TypeReference<>() {
                 });
                 FriendGUI.getInstance().onAcceptStatus(true, friend);
+            } else if (status.equals("FROM")) {
+                Customer user = Util.deserializeObject(parts[2], new TypeReference<>() {
+                });
+                FriendGUI.getInstance().onAcceptInvitation(user);
             } else {
                 FriendGUI.getInstance().onAcceptStatus(false, null);
             }
         } else {
+            if (status.equals("FROM")) {
+                FriendGUI.getInstance().onRejectInvitation(parts[2]);
+                return;
+            }
+
             int friendId = Integer.parseInt(parts[2]);
             FriendGUI.getInstance().onRejectStatus(!status.equals("ERROR"), friendId);
+        }
+    }
+
+    public static void handleNewOnlineUser(String message) {
+        int userId = Integer.parseInt(message);
+        if (FriendGUI.getInstance() != null && SessionManager.getInstance() != null) {
+            if (userId != SessionManager.getInstance().getCurrentUser().getId()) {
+                FriendGUI.getInstance().onNewOnlineUser(Integer.parseInt(message));
+            }
+        }
+    }
+
+    public static void handleOfflineUser(String message) {
+        int userId = Integer.parseInt(message);
+        if (FriendGUI.getInstance() != null && SessionManager.getInstance() != null) {
+            if (userId != SessionManager.getInstance().getCurrentUser().getId()) {
+                FriendGUI.getInstance().onOfflineUser(Integer.parseInt(message));
+            }
         }
     }
 }

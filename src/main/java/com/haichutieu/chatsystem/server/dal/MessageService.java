@@ -1,9 +1,6 @@
 package com.haichutieu.chatsystem.server.dal;
 
-import com.haichutieu.chatsystem.dto.ChatList;
-import com.haichutieu.chatsystem.dto.Message;
-import com.haichutieu.chatsystem.dto.MessageConversation;
-import com.haichutieu.chatsystem.dto.MessageDisplay;
+import com.haichutieu.chatsystem.dto.*;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -97,6 +94,21 @@ public class MessageService {
                         from ConversationMember 
                         where conversationID = :conversationID and customerID <> :userID
                     """, Integer.class).setParameter("conversationID", conversationID).setParameter("userID", userID).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // get list member of a conversation full information
+    public static List<MemberConversation> getMemberConversationFullInfo(long conversationID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                        select new MemberConversation(c.id, c.name, c.username, cm.isAdmin)
+                        from ConversationMember cm join Customer c
+                        on cm.customerID = c.id
+                        where cm.conversationID = :conversationID
+                    """, MemberConversation.class).setParameter("conversationID", conversationID).getResultList();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -236,5 +248,106 @@ public class MessageService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static long createGroupConversation(int userID, Conversation newConversation, List<Integer> memberIDs) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(newConversation);
+            session.persist(new ConversationMember(newConversation.getId(), userID, true));
+            for (var memberID : memberIDs) {
+                session.persist(new ConversationMember(newConversation.getId(), memberID, false));
+            }
+            transaction.commit();
+            return newConversation.getId();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static boolean addMembersToGroupConversation(long conversationID, List<Integer> memberIDs) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            for (var memberID : memberIDs) {
+                session.persist(new ConversationMember(conversationID, memberID, false));
+            }
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean removeMemberFromGroupConversation(long conversationID, int memberID) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      delete from ConversationMember
+                      where conversationID = :conversationID and customerID = :memberID
+                    """).setParameter("conversationID", conversationID).setParameter("memberID", memberID);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean updateGroupName(long conversationID, String newName) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      update Conversation
+                      set name = :newName
+                      where id = :conversationID
+                    """).setParameter("newName", newName).setParameter("conversationID", conversationID);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean assignGroupAdmin(long conversationID, int userId, boolean isAdmin) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      update ConversationMember
+                      set isAdmin = :isAdmin
+                      where conversationID = :conversationID and customerID = :userId
+                    """).setParameter("isAdmin", isAdmin).setParameter("conversationID", conversationID).setParameter("userId", userId);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+
     }
 }

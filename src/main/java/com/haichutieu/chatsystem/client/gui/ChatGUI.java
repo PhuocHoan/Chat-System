@@ -5,7 +5,10 @@ import com.haichutieu.chatsystem.client.bus.ChatAppController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
+import com.haichutieu.chatsystem.dto.Customer;
+import com.haichutieu.chatsystem.dto.MemberConversation;
 import com.haichutieu.chatsystem.dto.MessageConversation;
+import com.haichutieu.chatsystem.util.Util;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -15,9 +18,9 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -26,6 +29,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.*;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.sql.Timestamp;
@@ -38,6 +42,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static javafx.geometry.VPos.BOTTOM;
+import static javafx.geometry.VPos.TOP;
+
 public class ChatGUI {
     private static ChatGUI instance;
     public ObservableList<ChatList> conversations = FXCollections.observableArrayList(); // conversations are in chat
@@ -47,9 +54,6 @@ public class ChatGUI {
     public Map<Long, List<Integer>> memberConversation = new HashMap<>(); // store list of member in all conversation
     public ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
     public ChatList isFocusingConversation;
-
-    @FXML
-    private ImageView avatar;
 
     @FXML
     private VBox chatArea;
@@ -64,6 +68,9 @@ public class ChatGUI {
     private HBox deleteAllMessages;
 
     @FXML
+    private HBox deleteAllMessagesGroup;
+
+    @FXML
     private Text headerName;
 
     @FXML
@@ -73,13 +80,31 @@ public class ChatGUI {
     private VBox rightSideBar;
 
     @FXML
+    private VBox rightSideBarGroup;
+
+    @FXML
+    private VBox groupMemberContainer;
+
+    @FXML
+    private HBox changeGroupName;
+
+    @FXML
+    private HBox addMember;
+
+    @FXML
     private StackPane mainChatContainer;
 
     @FXML
     private Text rightSideBarName;
 
     @FXML
+    private Text rightSideBarGroupName;
+
+    @FXML
     private Text rightSideBarStatus;
+
+    @FXML
+    private Text rightSideBarStatusGroup;
 
     @FXML
     private ScrollPane chatScrollPane;
@@ -367,7 +392,7 @@ public class ChatGUI {
             content.setFill(chat.isSeen ? Color.BLACK : Color.YELLOW);
         }
         content.setText(text);
-        GridPane.setValignment(content, javafx.geometry.VPos.TOP);
+        GridPane.setValignment(content, TOP);
         content.setFont(new Font(14));
         conversation.add(content, 1, 1);
 
@@ -406,6 +431,7 @@ public class ChatGUI {
                 String status = circle.isVisible() ? "Online" : "Offline";
                 headerStatus.setText(status);
                 rightSideBarStatus.setText(status);
+                rightSideBarStatusGroup.setText(status);
             }
         }, 2, 5, TimeUnit.SECONDS); // delay first 2s
 
@@ -416,25 +442,35 @@ public class ChatGUI {
         conversation.getStyleClass().add("conversation"); // styling for conversation
 
         conversation.setOnMouseClicked(event -> {
-            if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
-                return;
-            }
             content.setFill(Color.BLACK);
-            avatar.setImage(new Image(Objects.requireNonNull(getClass().getResource(chat.isGroup ? "../../assets/group.png" : "../../assets/avatar.png")).toExternalForm()));
-            avatar.setFitHeight(131);
-            avatar.setFitWidth(95);
-            avatar.setPreserveRatio(true);
-            isFocusingConversation = new ChatList(chat);
-            ChatAppController.getMessageConversation(chat.conversationID);
-            ChatAppController.updateStatusConversation(chat.conversationID); // update has seen status conversation
-            headerName.setText(chat.conversationName);
-            rightSideBarName.setText(chat.conversationName);
-            mainChatContainer.setVisible(true);
-            rightSideBar.setVisible(true);
-            deleteAllMessages.setOnMouseClicked(e -> onRemoveAll());
+            openConversation(chat);
         });
 
         return conversation;
+    }
+
+    private void openConversation(ChatList chat) {
+        if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
+            return;
+        }
+        isFocusingConversation = new ChatList(chat);
+        ChatAppController.getMessageConversation(chat.conversationID);
+        ChatAppController.updateStatusConversation(chat.conversationID); // update has seen status conversation
+        mainChatContainer.setVisible(true);
+        headerName.setText(chat.conversationName);
+
+        if (chat.isGroup) {
+            rightSideBarGroupName.setText(chat.conversationName);
+            changeGroupName.setOnMouseClicked(e -> updateGroupName(chat));
+            addMember.setOnMouseClicked(e -> addNewGroupMember(chat));
+            ChatAppController.getAllMemberConversationCard(chat.conversationID);
+            deleteAllMessagesGroup.setOnMouseClicked(e -> onRemoveAll());
+        } else {
+            rightSideBarName.setText(chat.conversationName);
+            deleteAllMessages.setOnMouseClicked(e -> onRemoveAll());
+        }
+        rightSideBar.setVisible(!chat.isGroup);
+        rightSideBarGroup.setVisible(chat.isGroup);
     }
 
     public void getAllMemberConversation(Map<Long, List<Integer>> memberConversationServer) {
@@ -631,5 +667,357 @@ public class ChatGUI {
                 break;
             }
         }
+    }
+
+    public void createGroup(ChatList conversation) {
+        addNewConversation(conversation);
+    }
+
+    public void updateGroupName(ChatList conversation) {
+        Stage stage = new Stage();
+        stage.setTitle("Change group name");
+
+        // Create a new TextField
+        TextField textField = new TextField();
+        textField.setPromptText("Enter new group name");
+
+        // Create a new Button
+        Button button = new Button("Change");
+        button.setOnAction(event -> {
+            ChatAppController.updateGroupName(conversation.conversationID, textField.getText());
+            stage.close();
+        });
+
+        VBox vBox = new VBox(textField, button);
+        vBox.setSpacing(10);
+        vBox.setPadding(new Insets(10));
+        Scene scene = new Scene(vBox, 200, 100);
+
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    public void addNewGroupMember(ChatList conversation) {
+        Stage stage = new Stage();
+        stage.setTitle("Add new member");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(25, 25, 25, 25));
+
+        Label alert = new Label();
+        grid.add(alert, 0, 0, 2, 1);
+
+        Label addedMemberLabel = new Label("Added members");
+        grid.add(addedMemberLabel, 0, 1);
+        TextField addedMemberField = new TextField("Search username...");
+        grid.add(addedMemberField, 1, 1);
+
+        ObservableList<Customer> addedMembersList = FXCollections.observableArrayList();
+        ObservableList<Customer> membersToAddList = FXCollections.observableArrayList();
+        FilteredList<Customer> filteredMembersToAdd = new FilteredList<>(membersToAddList, p -> true);
+        addedMemberField.textProperty().addListener((observable, oldValue, newValue) -> filteredMembersToAdd.setPredicate(member -> {
+            if (newValue == null || newValue.isEmpty()) {
+                return true;
+            }
+            return member.getUsername().toLowerCase().contains(newValue.toLowerCase());
+        }));
+
+        // Remove friends already in the group
+        List<Integer> groupUsers = memberConversation.get(conversation.conversationID);
+        FriendGUI.getInstance().friends.stream().filter(friend -> !groupUsers.contains(friend.getId())).forEach(membersToAddList::add);
+
+        TableView<Customer> addedMembers = new TableView<>();
+        addedMembers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn<Customer, String> nameColumn = new TableColumn<>("Username");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        addedMembers.getColumns().add(nameColumn);
+
+        TableColumn<Customer, String> actionColumn = new TableColumn<>("Action");
+        actionColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        actionColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
+        actionColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Button removeButton = new Button("Remove");
+                    removeButton.setOnAction(event -> {
+                        Customer member = getTableView().getItems().get(getIndex());
+                        addedMembersList.remove(member);
+                        membersToAddList.add(member);
+                    });
+                    setGraphic(removeButton);
+                }
+            }
+        });
+
+        addedMembers.getColumns().add(actionColumn);
+        addedMembers.setItems(addedMembersList);
+        grid.add(addedMembers, 0, 2);
+
+        TableView<Customer> membersToAdd = new TableView<>();
+        membersToAdd.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn<Customer, String> nameColumn2 = new TableColumn<>("Username");
+        nameColumn2.setCellValueFactory(new PropertyValueFactory<>("username"));
+        membersToAdd.getColumns().add(nameColumn2);
+
+        TableColumn<Customer, String> actionColumn2 = new TableColumn<>("Action");
+        actionColumn2.setCellValueFactory(new PropertyValueFactory<>("name"));
+        actionColumn2.setStyle("-fx-alignment: BASELINE_CENTER;");
+        actionColumn2.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Button addButton = new Button("Add");
+                    addButton.setOnAction(event -> {
+                        Customer member = getTableView().getItems().get(getIndex());
+                        addedMembersList.add(member);
+                        membersToAddList.remove(member);
+                    });
+                    setGraphic(addButton);
+                }
+            }
+        });
+        membersToAdd.getColumns().add(actionColumn2);
+        membersToAdd.setItems(filteredMembersToAdd);
+        grid.add(membersToAdd, 1, 2);
+
+        Button submit = new Button("Submit");
+        grid.add(submit, 0, 3, 2, 1);
+        grid.setAlignment(Pos.CENTER);
+        submit.setOnAction(e -> {
+            if (addedMembersList.isEmpty()) {
+                alert.setText("Please add at least one member");
+                alert.setTextFill(Color.RED);
+                return;
+            }
+
+            // ADD_GROUP_MEMBER conversation_id [member_ids]
+            String json = Util.serializeObject(addedMembersList.stream().map(Customer::getId).toList());
+            ChatAppController.addGroupMember(conversation.conversationID, json);
+            stage.close();
+        });
+
+        Scene createGroupScene = new Scene(grid, 500, 600);
+        stage.setScene(createGroupScene);
+        stage.show();
+    }
+
+    private void renderGroupMembers(long conversationID, List<MemberConversation> members) {
+        if (isFocusingConversation != null && isFocusingConversation.conversationID == conversationID) {
+            int numberOfAdmins = (int) members.stream().filter(MemberConversation::getIsAdmin).count();
+            int myId = SessionManager.getInstance().getCurrentUser().getId();
+            boolean isMeAdmin = members.stream().anyMatch(x -> x.getId() == myId && x.getIsAdmin());
+            Platform.runLater(() -> {
+                groupMemberContainer.getChildren().clear();
+                members.forEach(member -> groupMemberContainer.getChildren().add(createMemberPane(member, conversationID, numberOfAdmins, isMeAdmin)));
+            });
+        }
+    }
+
+    public void onGetConversationMembers(long conversationID, List<MemberConversation> members) {
+        renderGroupMembers(conversationID, members);
+    }
+
+    public void onAddGroupMember(long conversationID, List<MemberConversation> members) {
+        // If the user is added to the group is ME, the group chat ChatList will be added
+        int myID = SessionManager.getInstance().getCurrentUser().getId();
+        if (members.stream().anyMatch(member -> member.getId() == myID)) {
+            ChatAppController.getChatList();
+        }
+
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
+        renderGroupMembers(conversationID, members);
+    }
+
+    public void onRemoveGroupMember(long conversationID, List<MemberConversation> members) {
+        // If the user is removed from the group is ME, the group chat will be closed
+        int myID = SessionManager.getInstance().getCurrentUser().getId();
+        if (members.stream().noneMatch(member -> member.getId() == myID)) {
+            conversations.removeIf(conversation -> conversation.conversationID == conversationID);
+            Platform.runLater(() -> {
+                mainChatContainer.setVisible(false);
+                rightSideBar.setVisible(false);
+            });
+        }
+
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
+        renderGroupMembers(conversationID, members);
+    }
+
+    public void onUpdateGroupName(long conversationID, String text) {
+        Platform.runLater(() -> {
+            conversations.forEach(conversation -> {
+                if (conversation.conversationID == conversationID) {
+                    conversation.conversationName = text;
+                    GridPane pane = conversationGridPaneMap.get(conversationID);
+                    HBox info = (HBox) pane.getChildren().getLast();
+                    Text content = (Text) info.getChildren().getFirst();
+                    content.setText(text);
+                }
+            });
+
+            if (isFocusingConversation != null && isFocusingConversation.conversationID == conversationID) {
+                rightSideBarGroupName.setText(text);
+                headerName.setText(text);
+            }
+        });
+    }
+
+    public void onAssignGroupAdmin(long conversationID, List<MemberConversation> members) {
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
+        renderGroupMembers(conversationID, members);
+    }
+
+    private GridPane createMemberPane(MemberConversation member, long conversationID, int numberOfAdmins, boolean isMeAdmin) {
+        GridPane memberName = new GridPane();
+        memberName.setHgap(10);
+        memberName.setVgap(10);
+
+        ColumnConstraints colConst1 = new ColumnConstraints();
+        colConst1.setFillWidth(true);
+        colConst1.setHgrow(Priority.ALWAYS);
+        colConst1.setPercentWidth(80.0);
+        memberName.getColumnConstraints().add(colConst1);
+        ColumnConstraints colConst2 = new ColumnConstraints();
+        colConst2.setFillWidth(true);
+        colConst2.setHgrow(Priority.ALWAYS);
+        colConst2.setPercentWidth(20.0);
+        memberName.getColumnConstraints().add(colConst2);
+
+        RowConstraints rowConst1 = new RowConstraints();
+        rowConst1.setPercentHeight(50.0);
+        memberName.getRowConstraints().add(rowConst1);
+        RowConstraints rowConst2 = new RowConstraints();
+        rowConst2.setPercentHeight(50.0);
+        memberName.getRowConstraints().add(rowConst2);
+
+        Text memberNameText = new Text(member.getName());
+        if (member.getIsAdmin()) {
+            memberNameText.setFill(Color.rgb(115, 27, 209));
+        }
+        GridPane.setValignment(memberNameText, BOTTOM);
+        memberNameText.setFont(Font.font("System", FontWeight.BOLD, 16));
+        memberName.add(memberNameText, 0, 0);
+
+        Text username = new Text(member.getUsername());
+        GridPane.setValignment(username, TOP);
+        memberName.add(username, 0, 1);
+
+        int myId = SessionManager.getInstance().getCurrentUser().getId();
+
+        MenuButton actions = new MenuButton(" ⋯ ");
+
+        // If this member is not an admin, show the "Promote to Admin" option
+        if (!member.getIsAdmin()) {
+            MenuItem promote = new MenuItem("Promote to Admin");
+            promote.setOnAction(e -> {
+                if (!isMeAdmin) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("No Permission");
+                    alert.setHeaderText("You must be an admin of the group to do this!");
+                    alert.show();
+                    return;
+                }
+                ChatAppController.assignGroupAdmin(conversationID, member.getId(), true);
+            });
+            actions.getItems().add(promote);
+        } else {
+            MenuItem demote = new MenuItem("Remove Admin Role");
+            demote.setOnAction(e -> {
+                if (!isMeAdmin) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("No Permission");
+                    alert.setHeaderText("You must be an admin of the group to do this!");
+                    alert.show();
+                    return;
+                }
+
+                if (numberOfAdmins == 1) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("You can't remove the last admin of the group!");
+                    alert.show();
+                    return;
+                }
+
+                if (member.getId() == myId) {
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.setTitle("Remove Admin Role");
+                    alert.setHeaderText("Are you sure to remove your Admin role?");
+                    alert.showAndWait().ifPresent(response -> {
+                        if (response == ButtonType.OK) {
+                            ChatAppController.assignGroupAdmin(conversationID, member.getId(), false);
+                        }
+                    });
+                    return;
+                }
+
+                ChatAppController.assignGroupAdmin(conversationID, member.getId(), false);
+            });
+            actions.getItems().add(demote);
+        }
+
+        if (member.getId() == myId) {
+            MenuItem leave = new MenuItem("Leave Group");
+            leave.setOnAction(e -> {
+                if (numberOfAdmins == 1 && isMeAdmin) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("Please assign another admin before leaving the group!");
+                    alert.show();
+                    return;
+                }
+
+                ChatAppController.removeGroupMember(conversationID, member.getId());
+            });
+            actions.getItems().add(leave);
+        } else {
+            MenuItem remove = new MenuItem("Remove from Group");
+            remove.setOnAction(e -> {
+                if (!isMeAdmin) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("No Permission");
+                    alert.setHeaderText("You must be an admin of the group to do this!");
+                    alert.show();
+                    return;
+                }
+
+                if (numberOfAdmins == 1) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("You can't remove the last admin of the group!");
+                    alert.show();
+                    return;
+                }
+
+                ChatAppController.removeGroupMember(conversationID, member.getId());
+            });
+            actions.getItems().add(remove);
+        }
+
+        memberName.add(actions, 1, 0, 1, 2);
+
+        return memberName;
+    }
+
+    public void openChat(Customer friend) {
+//        // If the conversation with this friend already exists, open it
+//        for (ChatList conversation : conversations) {
+//            if (!conversation.isGroup && conversation.conversationName.equals(friend.getUsername())) {
+//                openConversation(conversation);
+//                return;
+//            }
+//        }
+//        ChatList chat = new ChatList(0, friend.getUsername(), friend.getUsername(), "", new Timestamp(System.currentTimeMillis()), false, false);
+//        addNewConversation(chat);
+//        openConversation(chat);
     }
 }

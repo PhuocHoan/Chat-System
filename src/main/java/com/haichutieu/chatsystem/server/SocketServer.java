@@ -176,6 +176,10 @@ public class SocketServer {
             case "OFFLINE":
                 handleOffline(content, clientChannel); // user exit or logout
                 break;
+            case "CREATE_GROUP":
+                return handleCreateGroup(content);
+            case "GROUP":
+                return handleGroup(content);
             // Admin commands
             case "LOGIN_ADMIN":
                 return handleAdminLogin(content);
@@ -227,16 +231,38 @@ public class SocketServer {
         int friendID = Integer.parseInt(parts[2]);
 
         Customer friend = CustomerService.getCustomerByID(friendID);
+        Customer user = CustomerService.getCustomerByID(userID);
 
         if (type.equals("ACCEPT")) {
             if (!FriendsService.acceptFriend(userID, friendID)) {
                 return "ANSWER_INVITATION ACCEPT ERROR " + friendID;
             }
+
+            AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
+            if (friendChannel != null) {
+                try {
+                    friendChannel.write(ByteBuffer.wrap(("ANSWER_INVITATION ACCEPT FROM " + Util.serializeObject(user) + "\n").getBytes())).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             return "ANSWER_INVITATION ACCEPT OK " + Util.serializeObject(friend);
         } else if (type.equals("REJECT")) {
             if (!FriendsService.rejectFriend(userID, friendID)) {
                 return "ANSWER_INVITATION REJECT ERROR " + friendID;
             }
+
+            AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
+            if (friendChannel != null) {
+                try {
+                    assert user != null;
+                    friendChannel.write(ByteBuffer.wrap(("ANSWER_INVITATION REJECT FROM " + user.getUsername() + "\n").getBytes())).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             return "ANSWER_INVITATION REJECT OK " + friendID;
         }
 
@@ -250,6 +276,17 @@ public class SocketServer {
         if (!FriendsService.addFriend(userID, friendID)) {
             return "ADD_FRIEND ERROR " + friendID;
         }
+
+        AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
+        if (friendChannel != null) {
+            Customer user = CustomerService.getCustomerByID(userID);
+            try {
+                friendChannel.write(ByteBuffer.wrap(("GET_FRIEND_REQUEST NEW " + Util.serializeObject(user) + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         return "ADD_FRIEND OK " + friendID;
     }
 
@@ -593,6 +630,15 @@ public class SocketServer {
         if (!FriendsService.removeFriend(userID, friendID)) {
             return "UNFRIEND ERROR " + friendID;
         }
+
+        AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
+        if (friendChannel != null) {
+            try {
+                friendChannel.write(ByteBuffer.wrap(("UNFRIEND FROM " + userID + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return "UNFRIEND OK " + friendID;
     }
 
@@ -624,6 +670,16 @@ public class SocketServer {
         if (!FriendsService.blockUser(userID, blockedID)) {
             return "BLOCK ERROR " + blockedID;
         }
+
+        AsynchronousSocketChannel blockedChannel = onlineUsers.get(blockedID);
+        if (blockedChannel != null) {
+            try {
+                blockedChannel.write(ByteBuffer.wrap(("BLOCKED FROM " + userID + "\n").getBytes())).get();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         return "BLOCK OK " + blockedID;
     }
 
@@ -794,6 +850,123 @@ public class SocketServer {
             return "GET_FRIEND_REQUEST ERROR Failed to fetch friend requests";
         }
         return "GET_FRIEND_REQUEST OK " + Util.serializeObject(friendRequests);
+    }
+
+    private String handleCreateGroup(String content) {
+        String[] parts = content.split(" ", 2);
+        int userID = Integer.parseInt(parts[0]);
+
+        String[] parts2 = parts[1].split("END");
+        String groupName = parts2[0].trim();
+        String members = parts2[1].trim();
+
+        List<Integer> memberIDs = Util.deserializeObject(members, new TypeReference<>() {
+        });
+        Conversation conversation = new Conversation();
+        conversation.setName(groupName);
+        conversation.setIsGroup(true);
+        conversation.setCreateDate(new Timestamp(System.currentTimeMillis()));
+
+        long conversationId = MessageService.createGroupConversation(userID, conversation, memberIDs);
+        if (conversationId == -1) {
+            return "CREATE_GROUP ERROR Failed to create group";
+        }
+
+        ChatList chatList = new ChatList();
+        chatList.conversationID = conversationId;
+        chatList.conversationName = groupName;
+        chatList.isGroup = true;
+
+        memberIDs.forEach(memberID -> {
+            AsynchronousSocketChannel channel = onlineUsers.get(memberID);
+            if (channel != null) {
+                try {
+                    channel.write(ByteBuffer.wrap(("CREATE_GROUP " + Util.serializeObject(chatList) + "\n").getBytes())).get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        return "CREATE_GROUP OK " + Util.serializeObject(chatList);
+    }
+
+    private String handleGroup(String message) {
+        String[] parts = message.split(" ", 3);
+        long conversationID = Long.parseLong(parts[1]);
+        String content = parts[2];
+
+        switch (parts[0]) {
+            case "ADD_MEMBER":
+                if (MessageService.addMembersToGroupConversation(conversationID, Util.deserializeObject(content, new TypeReference<>() {
+                }))) {
+                    List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
+                    if (users != null) {
+                        // Send the message to other members in the group
+                        String sendingMessage = "GROUP ADD_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
+                        users.forEach(user -> sendToUser(user.getId(), sendingMessage));
+                        return sendingMessage;
+                    }
+                }
+                return "GROUP ADD_MEMBER ERROR " + conversationID;
+
+            case "REMOVE_MEMBER":
+                int memberID = Integer.parseInt(content);
+                if (MessageService.removeMemberFromGroupConversation(conversationID, memberID)) {
+                    List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
+                    if (users != null) {
+                        // Send the message to other members in the group
+                        String sendingMessage = "GROUP REMOVE_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
+                        users.forEach(user -> sendToUser(user.getId(), sendingMessage));
+                        return sendingMessage;
+                    }
+                }
+                return "GROUP REMOVE_MEMBER ERROR " + conversationID;
+
+            case "GET_MEMBERS":
+                List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
+                if (users == null) {
+                    return "GROUP GET_MEMBERS ERROR " + conversationID;
+                }
+                return "GROUP GET_MEMBERS OK " + conversationID + " " + Util.serializeObject(users);
+
+            case "UPDATE_NAME":
+                if (MessageService.updateGroupName(conversationID, content)) {
+                    // Send the message to other members in the group
+                    String sendingMessage = "GROUP UPDATE_NAME OK " + conversationID + " " + content;
+                    List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
+                    assert members != null;
+                    members.forEach(user -> sendToUser(user.getId(), sendingMessage));
+                    return sendingMessage;
+                }
+                return "GROUP UPDATE_NAME ERROR " + conversationID;
+
+            case "ASSIGN_ADMIN":
+                int userId = Integer.parseInt(content.split(" ")[0]);
+                boolean isAdmin = Boolean.parseBoolean(content.split(" ")[1]);
+                if (MessageService.assignGroupAdmin(conversationID, userId, isAdmin)) {
+                    // Send the message to other members in the group
+                    List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
+                    String sendingMessage = "GROUP ASSIGN_ADMIN OK " + conversationID + " " + Util.serializeObject(members);
+                    assert members != null;
+                    members.forEach(user -> sendToUser(user.getId(), sendingMessage));
+                    return sendingMessage;
+                }
+                return "GROUP ASSIGN_ADMIN ERROR " + conversationID;
+        }
+
+        return "GROUP ERROR Invalid command";
+    }
+
+    private void sendToUser(int userID, String message) {
+        AsynchronousSocketChannel channel = onlineUsers.get(userID);
+        if (channel != null) {
+            try {
+                channel.write(ByteBuffer.wrap((message + "\n").getBytes())).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private static class SocketServerHelper {
