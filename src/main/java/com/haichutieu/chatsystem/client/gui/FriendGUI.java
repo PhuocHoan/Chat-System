@@ -4,26 +4,35 @@ import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.Customer;
+import com.haichutieu.chatsystem.dto.SpamList;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static javafx.geometry.VPos.*;
+import static javafx.scene.layout.GridPane.*;
 
 public class FriendGUI {
 
@@ -48,12 +57,12 @@ public class FriendGUI {
     @FXML
     private Button userSearchButton;
 
-    private ObservableList<Customer> friends = null;
+    public ObservableList<Customer> friends = FXCollections.observableArrayList();
     private FilteredList<Customer> filteredFriends;
-    private Set<Integer> onlineFriendIDs;
+    private Map<Integer, GridPane> friendGridPaneMap = new HashMap<>();
 
-    private ObservableList<Customer> friendInvitations = null;
-    private FilteredList<Customer> filteredFriendInvitations;
+    private ObservableList<Customer> friendInvitations = FXCollections.observableArrayList();
+    private Map<Integer, GridPane> friendInvitationMap = new HashMap<>();
 
     public FriendGUI() {
         instance = this;
@@ -69,14 +78,21 @@ public class FriendGUI {
         screen.setFocusTraversable(true);
         screen.setOnMouseClicked(event -> screen.requestFocus());
         // Fetch for initial friend list
-        onlineFriendIDs = Set.of();
         loading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         friendContainer.getChildren().add(loading);
         invitationContainer.getChildren().add(loading);
+
+        // Initialize ChoiceBox
+        statusFilter.setItems(FXCollections.observableArrayList("All", "Online", "Offline"));
+        statusFilter.setValue("All");
+
+        // Bind ChoiceBox and TextField to FilteredList
+        friendSearchField.textProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
+        statusFilter.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
+
         long userId = SessionManager.getInstance().getCurrentUser().getId();
         SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
         SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
-
     }
 
     @FXML
@@ -108,22 +124,30 @@ public class FriendGUI {
                 return;
             }
 
-            friends = FXCollections.observableArrayList(friendList);
             filteredFriends = new FilteredList<>(friends, p -> true);
-
-            for (int id : SessionManager.getInstance().onlineUsers) {
-                if (friends.stream().anyMatch(f -> f.getId() == id)) {
-                    this.onlineFriendIDs.add(id);
+            filteredFriends.addListener((ListChangeListener<Customer>) c -> {
+                while (c.next()) {
+                    if (c.wasRemoved()) {
+                        Platform.runLater(() -> {
+                            for (Customer friend : c.getRemoved()) {
+                                GridPane pane = friendGridPaneMap.remove(friend.getId());
+                                friendContainer.getChildren().remove(pane);
+                            }
+                        });
+                    }
+                    if (c.wasAdded()) {
+                        Platform.runLater(() -> {
+                            for (Customer friend : c.getAddedSubList()) {
+                                GridPane friendPane = createFriendCard(friend);
+                                friendGridPaneMap.put(friend.getId(), friendPane);
+                                friendContainer.getChildren().add(friendPane);
+                            }
+                        });
+                    }
                 }
-            }
+            });
 
-            // Initialize ChoiceBox
-            statusFilter.setItems(FXCollections.observableArrayList("All", "Online", "Offline"));
-            statusFilter.setValue("All");
-            // Bind ChoiceBox and TextField to FilteredList
-            friendSearchField.textProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
-            statusFilter.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateFriendSearchAndFilter());
-            displayFriends();
+            friends.setAll(friendList);
         });
     }
 
@@ -140,11 +164,20 @@ public class FriendGUI {
     public void onAcceptInvitation(Customer friend) {
         Platform.runLater(() -> {
             friends.addFirst(friend);
-            displayFriends();
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Friend Request");
-            alert.setHeaderText(friend.getName() + " accepted your friend request!");
+            alert.setHeaderText(friend.getUsername() + " accepted your friend request!");
+            alert.showAndWait();
+        });
+    }
+
+    // Called when your friend request if rejected from a user
+    public void onRejectInvitation(String username) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Friend Request");
+            alert.setHeaderText(username + " rejected your friend request!");
             alert.showAndWait();
         });
     }
@@ -167,7 +200,7 @@ public class FriendGUI {
             alert.showAndWait();
 
             friends.removeIf(f -> f.getId() == friendId);
-            displayFriends();
+            //displayFriends();
         });
     }
 
@@ -178,27 +211,25 @@ public class FriendGUI {
 
             boolean matchesSearch = friend.getName().toLowerCase().contains(searchText);
             boolean matchesStatus = switch (status) {
-                case "Online" -> onlineFriendIDs.contains(friend.getId());
-                case "Offline" -> !onlineFriendIDs.contains(friend.getId());
+                case "Online" -> SessionManager.getInstance().onlineUsers.contains(friend.getId());
+                case "Offline" -> !SessionManager.getInstance().onlineUsers.contains(friend.getId());
                 default -> true;
             };
 
             return matchesSearch && matchesStatus;
         });
-
-        displayFriends();
     }
 
-    private void displayFriends() {
-        friendContainer.getChildren().clear();
+//    private void displayFriends() {
+//        friendContainer.getChildren().clear();
+//
+//        for (Customer customer : filteredFriends) {
+//            GridPane friendPane = createFriendCard(customer, SessionManager.getInstance().onlineUsers.contains(customer.getId()));
+//            friendContainer.getChildren().add(friendPane);
+//        }
+//    }
 
-        for (Customer customer : filteredFriends) {
-            GridPane friendPane = createFriendCard(customer, this.onlineFriendIDs.contains(customer.getId()));
-            friendContainer.getChildren().add(friendPane);
-        }
-    }
-
-    private GridPane createFriendCard(Customer friend, boolean isOnline) {
+    private GridPane createFriendCard(Customer friend) {
         GridPane friendCard = new GridPane();
         friendCard.setPrefHeight(70);
 
@@ -237,6 +268,7 @@ public class FriendGUI {
         statusLabel.setFont(Font.font(14));
         statusLabel.setStyle("-fx-fill: white;");
 
+        boolean isOnline = SessionManager.getInstance().onlineUsers.contains(friend.getId());
         Text statusText = new Text(isOnline ? "Online" : "Offline");
         statusText.setFont(Font.font(null, FontWeight.BOLD, 14));
         String color = isOnline ? "#99FF66" : "#DDDDDD";
@@ -252,7 +284,7 @@ public class FriendGUI {
 
         MenuButton actions = new MenuButton("Actions");
         MenuItem m1 = new MenuItem("Chat");
-//        m1.setOnAction(e -> switchToChatTab(e));
+        m1.setOnAction(e -> chatWithPerson(friend));
         MenuItem m2 = new MenuItem("New Group");
         m2.setOnAction(e -> createNewGroup(friend));
         MenuItem m3 = new MenuItem("Unfriend");
@@ -269,6 +301,11 @@ public class FriendGUI {
         GridPane.setHalignment(actions, HPos.CENTER);
 
         return friendCard;
+    }
+
+    private void chatWithPerson(Customer friend) {
+        SceneController.setScene("chat");
+        ChatGUI.getInstance().openChat(friend);
     }
 
     private void blockFriend(Customer friend, GridPane friendCard) {
@@ -313,7 +350,10 @@ public class FriendGUI {
 
     private void createNewGroup(Customer friend) {
         Stage createGroupStage = new Stage();
+        createGroupStage.initOwner(SceneController.primaryStage);
+        createGroupStage.initModality(Modality.NONE);
         createGroupStage.setTitle("Create New Group");
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
@@ -324,36 +364,119 @@ public class FriendGUI {
         TextField groupNameField = new TextField();
         grid.add(groupNameField, 1, 1);
 
+
         Label addedMemberLabel = new Label("Group members");
         grid.add(addedMemberLabel, 0, 2);
-        ObservableList<Customer> addedMembersList = FXCollections.observableArrayList();
-        addedMembersList.add(friend);
-        ListView<String> addedMembers = new ListView<>();
-        addedMembers.getItems().add(friend.getName());
-        grid.add(addedMembers, 0, 3, 2, 1);
-        Button addMemberButton = new Button("Remove");
-        grid.add(addMemberButton, 1, 4);
+        Label addNewMemberLabel = new Label("Add new members");
+        addNewMemberLabel.setAlignment(Pos.CENTER);
+        grid.add(addNewMemberLabel, 1, 2);
 
-        Label membersToAdd = new Label("Add new members");
-        grid.add(membersToAdd, 0, 5);
+        ObservableList<Customer> addedMembersList = FXCollections.observableArrayList();
         ObservableList<Customer> membersToAddList = FXCollections.observableArrayList();
         addedMembersList.add(friend);
-//        ListView<String> membersToAdd = new ListView<String>();
-//        addedMembers.getItems().add(friend.getName());
-//        grid.add(addedMembers, 0, 3, 2, 1);
-//        Button addMemberButton = new Button("Remove");
-//        grid.add(addMemberButton, 1, 4);
+        for (Customer f : friends) {
+            if (f.getId() != friend.getId()) {
+                membersToAddList.add(f);
+            }
+        }
 
+        TableView<Customer> addedMembers = new TableView<>();
+        addedMembers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn<Customer, String> nameColumn = new TableColumn<>("Username");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        addedMembers.getColumns().add(nameColumn);
 
-        Scene createGroupScene = new Scene(grid, 500, 500);
+        TableColumn<Customer, String> actionColumn = new TableColumn<>("Action");
+        actionColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        actionColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
+        actionColumn.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Button removeButton = new Button("Remove");
+                    removeButton.setOnAction(event -> {
+                        Customer member = getTableView().getItems().get(getIndex());
+                        if (member.getId() == friend.getId()) {
+                            return;
+                        }
+                        addedMembersList.remove(member);
+                        membersToAddList.add(member);
+                    });
+                    setGraphic(removeButton);
+                }
+            }
+        });
+        addedMembers.getColumns().add(actionColumn);
+        addedMembers.setItems(addedMembersList);
+        grid.add(addedMembers, 0, 3);
+
+        TableView<Customer> membersToAdd = new TableView<>();
+        membersToAdd.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn<Customer, String> nameColumn2 = new TableColumn<>("Username");
+        nameColumn2.setCellValueFactory(new PropertyValueFactory<>("username"));
+        membersToAdd.getColumns().add(nameColumn2);
+
+        TableColumn<Customer, String> actionColumn2 = new TableColumn<>("Action");
+        actionColumn2.setCellValueFactory(new PropertyValueFactory<>("name"));
+        actionColumn2.setStyle("-fx-alignment: BASELINE_CENTER;");
+        actionColumn2.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    Button addButton = new Button("Add");
+                    addButton.setOnAction(event -> {
+                        Customer member = getTableView().getItems().get(getIndex());
+                        addedMembersList.add(member);
+                        membersToAddList.remove(member);
+                    });
+                    setGraphic(addButton);
+                }
+            }
+        });
+        membersToAdd.getColumns().add(actionColumn2);
+        membersToAdd.setItems(membersToAddList);
+        grid.add(membersToAdd, 1, 3);
+
+        Button createGroupButton = new Button("Create Group");
+        createGroupButton.setOnAction(e -> {
+            if (groupNameField.getText().isBlank()) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Group name cannot be empty!");
+                alert.showAndWait();
+                return;
+            }
+
+            if (addedMembersList.size() < 3) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("You must add at least 1 more member to create a group.");
+                alert.showAndWait();
+                return;
+            }
+
+            // CREATE_GROUP <userId> <groupName> END [list_of_member_ids] END
+            // list_of_member_ids is a json list of member ids
+            StringBuilder memberIds = new StringBuilder("[");
+            for (Customer member : addedMembersList) {
+                memberIds.append(member.getId()).append(",");
+            }
+            memberIds.deleteCharAt(memberIds.length() - 1);
+            memberIds.append("]");
+            SocketClient.getInstance().sendMessages("CREATE_GROUP " + SessionManager.getInstance().getCurrentUser().getId() + " " + groupNameField.getText() + " END " + memberIds + " END");
+            createGroupStage.close();
+        });
+        grid.add(createGroupButton, 0, 4, 2, 1);
+
+        Scene createGroupScene = new Scene(grid, 500, 600);
         createGroupStage.setScene(createGroupScene);
         createGroupStage.showAndWait();
-
-        // Get the data from the stage
-
-        // Call the conversationController to create a new group
-
-        // Switch the scene to the chat tab
     }
 
 
@@ -375,8 +498,7 @@ public class FriendGUI {
             alert.showAndWait();
 
             friends.removeIf(f -> f.getId() == friendId);
-            onlineFriendIDs.remove(friendId);
-            displayFriends();
+            // displayFriends();
         });
     }
 
@@ -516,26 +638,37 @@ public class FriendGUI {
                 return;
             }
 
-            friendInvitations = FXCollections.observableArrayList(invitationList);
-            filteredFriendInvitations = new FilteredList<>(friendInvitations, p -> true);
-
+            FilteredList<Customer> filteredFriendInvitations = new FilteredList<>(friendInvitations, p -> true);
             // Bind TextField to FilteredList
             friendRequestSearch.textProperty().addListener((obs, oldValue, newValue) -> {
                 filteredFriendInvitations.setPredicate(friend -> friend.getName().toLowerCase().contains(newValue.toLowerCase()));
-                displayFriendInvitations();
             });
 
-            displayFriendInvitations();
+            filteredFriendInvitations.addListener((ListChangeListener<Customer>) c -> {
+                while (c.next()) {
+                    if (c.wasRemoved()) {
+                        Platform.runLater(() -> {
+                            for (Customer friend : c.getRemoved()) {
+                                GridPane pane = friendInvitationMap.remove(friend.getId());
+                                invitationContainer.getChildren().remove(pane);
+                            }
+                        });
+                    }
+                    if (c.wasAdded()) {
+                        Platform.runLater(() -> {
+                            for (Customer friend : c.getAddedSubList()) {
+                                GridPane friendPane = createUserCard(friend, "INVITATION");
+                                friendInvitationMap.put(friend.getId(), friendPane);
+                                invitationContainer.getChildren().add(friendPane);
+                            }
+                        });
+                    }
+                }
+            });
+
+            invitationContainer.getChildren().remove(loading);
+            friendInvitations.setAll(invitationList);
         });
-    }
-
-    private void displayFriendInvitations() {
-        invitationContainer.getChildren().clear();
-
-        for (Customer customer : filteredFriendInvitations) {
-            GridPane friendPane = createUserCard(customer, "INVITATION");
-            invitationContainer.getChildren().add(friendPane);
-        }
     }
 
     private void rejectInvitation(Customer user) {
@@ -554,7 +687,6 @@ public class FriendGUI {
             }
 
             friendInvitations.removeIf(f -> f.getId() == friendId);
-            displayFriendInvitations();
         });
     }
 
@@ -574,10 +706,55 @@ public class FriendGUI {
                 alert.show();
             }
 
-            friendInvitations.remove(friend);
+            friendInvitations.removeIf(f -> f.getId() == friend.getId());
             friends.add(friend);
-            displayFriendInvitations();
-            displayFriends();
+        });
+    }
+
+    public void onReceiveNewFriendRequest(Customer friend) {
+        System.out.println("Im here i guess");
+        Platform.runLater(() -> {
+            friendInvitations.addAll(friend);
+        });
+    }
+
+    public void onNewOnlineUser(int userId) {
+        Platform.runLater(() -> {
+            friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
+                // Change the Online status of the friend
+
+                for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
+                    if (node instanceof TextFlow) {
+                        TextFlow status = (TextFlow) node;
+                        Text statusText = (Text) status.getChildren().get(1);
+                        statusText.setText("Online");
+                        statusText.setStyle("-fx-fill: #99FF66;");
+                    }
+                }
+            });
+        });
+    }
+
+    public void onOfflineUser(int userId) {
+        Platform.runLater(() -> {
+            friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
+                // Change the Online status of the friend
+
+                for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
+                    if (node instanceof TextFlow) {
+                        TextFlow status = (TextFlow) node;
+                        Text statusText = (Text) status.getChildren().get(1);
+                        statusText.setText("Offline");
+                        statusText.setStyle("-fx-fill: #DDDDDD;");
+                    }
+                }
+            });
+        });
+    }
+
+    public void onUnfriendFrom(int friendId) {
+        Platform.runLater(() -> {
+            friends.removeIf(f -> f.getId() == friendId);
         });
     }
 }

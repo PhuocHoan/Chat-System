@@ -104,7 +104,7 @@ public class MessageService {
     public static List<MemberConversation> getMemberConversation(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
-                        select c.name, cm.isAdmin
+                        select new MemberConversation(c.id, c.name, c.username, cm.isAdmin)
                         from ConversationMember cm join Customer c
                         on cm.customerID = c.id
                         where cm.conversationID = :conversationID
@@ -248,5 +248,106 @@ public class MessageService {
             }
             e.printStackTrace();
         }
+    }
+
+    public static long createGroupConversation(int userID, Conversation newConversation, List<Integer> memberIDs) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            session.persist(newConversation);
+            session.persist(new ConversationMember(newConversation.getId(), userID, true));
+            for (var memberID : memberIDs) {
+                session.persist(new ConversationMember(newConversation.getId(), memberID, false));
+            }
+            transaction.commit();
+            return newConversation.getId();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static boolean addMembersToGroupConversation(long conversationID, List<Integer> memberIDs) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            for (var memberID : memberIDs) {
+                session.persist(new ConversationMember(conversationID, memberID, false));
+            }
+            transaction.commit();
+            return true;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean removeMemberFromGroupConversation(long conversationID, int memberID) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      delete from ConversationMember
+                      where conversationID = :conversationID and customerID = :memberID
+                    """).setParameter("conversationID", conversationID).setParameter("memberID", memberID);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean updateGroupName(long conversationID, String newName) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      update Conversation
+                      set name = :newName
+                      where id = :conversationID
+                    """).setParameter("newName", newName).setParameter("conversationID", conversationID);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean assignGroupAdmin(long conversationID, int userId, boolean isAdmin) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            Query q = session.createQuery("""
+                      update ConversationMember
+                      set isAdmin = :isAdmin
+                      where conversationID = :conversationID and customerID = :userId
+                    """).setParameter("isAdmin", isAdmin).setParameter("conversationID", conversationID).setParameter("userId", userId);
+            int result = q.executeUpdate();
+            transaction.commit();
+            return result > 0;
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return false;
+        }
+
     }
 }

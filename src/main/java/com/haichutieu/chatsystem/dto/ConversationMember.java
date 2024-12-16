@@ -24,6 +24,12 @@ public class ConversationMember {
     public ConversationMember() {
     }
 
+    public ConversationMember(long conversationID, int customerID, boolean isAdmin) {
+        this.conversationID = conversationID;
+        this.customerID = customerID;
+        this.isAdmin = isAdmin;
+    }
+
     public long getConversationID() {
         return conversationID;
     }
