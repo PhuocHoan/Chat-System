@@ -52,7 +52,7 @@ public class MessageService {
                          lm.message AS latest_message,
                          lm.time AS latest_time,
                          c.is_group,
-                         COALESCE(lm.status, FALSE) AS is_read
+                         lm.status AS is_read
                      FROM
                          conversation c
                      JOIN
@@ -73,7 +73,7 @@ public class MessageService {
     }
 
     // get list member id of a conversation, for user
-    public static List<Integer> getMemberConversationUser(long conversationID) {
+    public static List<Integer> getMemberConversation(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select customerID 
@@ -87,7 +87,7 @@ public class MessageService {
     }
 
     // get list member id of a conversation except me
-    public static List<Integer> getMemberConversationUser(long conversationID, int userID) {
+    public static List<Integer> getMemberConversation(long conversationID, int userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select customerID 
@@ -132,10 +132,10 @@ public class MessageService {
     public static List<MessageConversation> getMessageConversation(long conversationID, int userID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createNativeQuery("""
-                    select m.id, m.conversation_id, m.customer_id, c.name, m.time, m.message 
-                    from message m 
+                    select m.id, m.conversation_id, m.customer_id, c.name, m.time, m.message
+                    from message m
                     join (select message_id from message_display where customer_id = :userID) md
-                    on m.id = md.message_id join customer c on m.customer_id = c.id
+                    on m.id = md.message_id left join customer c on m.customer_id = c.id
                     where m.conversation_id = :conversationID
                     order by m.time
                     """, MessageConversation.class).setParameter("conversationID", conversationID).setParameter("userID", userID).getResultList();
@@ -174,7 +174,7 @@ public class MessageService {
             Message messagePersist = new Message(message.conversation_id, message.senderID, message.time, message.message);
             session.persist(messagePersist);
 
-            for (var member_id : members) {
+            for (int member_id : members) {
                 if (member_id == message.senderID) {
                     session.persist(new MessageDisplay(messagePersist, member_id, true));
                     continue;

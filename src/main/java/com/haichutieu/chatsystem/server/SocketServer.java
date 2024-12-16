@@ -153,8 +153,6 @@ public class SocketServer {
                 return getOnlineUsers();
             case "GET_ALL_MEMBER_CONVERSATION":
                 return getAllMemberConversation(content);
-            case "GET_MEMBER_CONVERSATION_ADMIN":
-                return getMemberConversationAdmin(content);
             case "GET_MESSAGE_CONVERSATION":
                 return getMessageConversation(content);
             case "UPDATE_STATUS_CONVERSATION":
@@ -187,6 +185,10 @@ public class SocketServer {
                 return handleAdminLogin(content);
             case "FETCH_ACCOUNT_LIST":
                 return handleFetchAccountList();
+            case "FETCH_GROUP_LIST":
+                return handleFetchGroupList();
+            case "FETCH_MEMBER_LIST":
+                return handleFetchMemberList(content);
             case "ADD_ACCOUNT":
                 return handleAddAccount(content);
             case "DELETE_ACCOUNT":
@@ -208,7 +210,14 @@ public class SocketServer {
                 return handleLockAccount(content);
             case "FRIEND_COUNT":
                 return handleFriendCount();
-
+            case "FETCH_ONLINE_USER_COUNT_LIST":
+                return handleOnlineUserCountList();
+            case "FETCH_ONLINE_USER_COUNT_TIME_RANGE_LIST":
+                return handleOnlineUserCountTimeRangeList(content);
+            case "FETCH_NEW_USERS_MONTHLY":
+                return handleNewUsersMonthly();
+            case "FETCH_APP_USAGE_MONTHLY":
+                return handleAppUsageMonthly();
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
@@ -458,13 +467,8 @@ public class SocketServer {
         List<Long> conversationIDs = MessageService.getAllConversation(userID);
         Map<Long, List<Integer>> memberConversations = new HashMap<>();
         assert conversationIDs != null;
-        conversationIDs.forEach(conversationID -> memberConversations.put(conversationID, MessageService.getMemberConversationUser(conversationID, userID)));
+        conversationIDs.forEach(conversationID -> memberConversations.put(conversationID, MessageService.getMemberConversation(conversationID, userID)));
         return "GET_ALL_MEMBER_CONVERSATION " + Util.serializeObject(memberConversations);
-    }
-
-    private String getMemberConversationAdmin(String message) {
-        var memberConversation = MessageService.getMemberConversation(Long.parseLong(message));
-        return "GET_MEMBER_CONVERSATION_ADMIN " + Util.serializeObject(memberConversation);
     }
 
     private String getMessageConversation(String user) {
@@ -514,7 +518,7 @@ public class SocketServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        var memberConversation = MessageService.getMemberConversationUser(message.conversation_id);
+        var memberConversation = MessageService.getMemberConversation(message.conversation_id);
         // persist message to message table and message_display table
 
         message.id = MessageService.addMessage(message, memberConversation); // update message_id in MessageConversation
@@ -548,7 +552,7 @@ public class SocketServer {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        var memberConversation = MessageService.getMemberConversationUser(message.conversation_id);
+        var memberConversation = MessageService.getMemberConversation(message.conversation_id);
         MessageService.removeMessage(message.id);
         String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message);
         // send message to all members in same conversation
@@ -693,6 +697,16 @@ public class SocketServer {
         return "FETCH_ACCOUNT_LIST OK " + Util.serializeObject(allAccounts);
     }
 
+    private String handleFetchGroupList() {
+        List<Conversation> allGroups = AdminService.getConversation();
+        return "FETCH_GROUP_LIST " + Util.serializeObject(allGroups);
+    }
+
+    private String handleFetchMemberList(String content) {
+        List<MemberConversation> allMembers = AdminService.getMemberConversation(Long.parseLong(content));
+        return "FETCH_MEMBER_LIST " + Util.serializeObject(allMembers);
+    }
+
     private String handleAddAccount(String content) {
         Customer cus;
         cus = Util.deserializeObject(content, new TypeReference<>() {
@@ -803,6 +817,29 @@ public class SocketServer {
             return "FRIEND_COUNT ERROR null";
         }
         return "FRIEND_COUNT OK " + Util.serializeObject(friendCountList);
+    }
+
+    private String handleOnlineUserCountList() {
+        List<OnlineUserCount> onlineUserCountList = AdminService.getOnlineUserCountList();
+        return "FETCH_ONLINE_USER_COUNT_LIST " + Util.serializeObject(onlineUserCountList);
+    }
+
+    private String handleOnlineUserCountTimeRangeList(String content) {
+        String[] parts = content.split(" END ", 2);
+        Timestamp fromDate = Timestamp.valueOf(parts[0]);
+        Timestamp toDate = Timestamp.valueOf(parts[1]);
+        List<OnlineUserCount> onlineUserCountList = AdminService.getOnlineUserCountList(fromDate, toDate);
+        return "FETCH_ONLINE_USER_COUNT_LIST " + Util.serializeObject(onlineUserCountList);
+    }
+
+    private String handleNewUsersMonthly() {
+        Map<Integer, List<Long>> newUsers = AdminService.getNewUsersMonthly();
+        return "FETCH_NEW_USERS_MONTHLY " + Util.serializeObject(newUsers);
+    }
+
+    private String handleAppUsageMonthly() {
+        Map<Integer, List<Long>> appUsage = AdminService.getAppUsageMonthly();
+        return "FETCH_APP_USAGE_MONTHLY " + Util.serializeObject(appUsage);
     }
 
     private String handleGetFriendRequest(String content) {

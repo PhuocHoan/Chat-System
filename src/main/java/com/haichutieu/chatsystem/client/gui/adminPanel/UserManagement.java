@@ -52,7 +52,8 @@ public class UserManagement {
     public static UserManagement getInstance() {
         return instance;
     }
-
+    
+    @FXML
     public void initialize() {
         loading.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         titleContainer.getChildren().add(loading);
@@ -77,7 +78,6 @@ public class UserManagement {
             alert.setContentText("Invalid email address.");
         }
     }
-
 
     private void setupTable() {
         TableColumn<Customer, String> idColumn = new TableColumn<>("ID");

@@ -47,7 +47,7 @@ public class ChatAppController {
         }
     }
 
-    // get member for all conversation
+    // get members for all conversation
     public static void getAllMemberConversation() {
         SocketClient.getInstance().sendMessages("GET_ALL_MEMBER_CONVERSATION " + SessionManager.getInstance().getCurrentUser().getId());
     }
@@ -84,15 +84,6 @@ public class ChatAppController {
         FriendsController.handleNewOnlineUser(message);
     }
 
-////     for admin
-//    public static void getMemberConversationAdmin(long conversationID) {
-//        SocketClient.getInstance().sendMessages("GET_MEMBER_CONVERSATION_ADMIN " + conversationID);
-//    }
-
-    /// /     for admin
-//    public static void handleMemberConversationAdmin(String message) {
-//        ChatGUI.getInstance().getMemberConversationAdmin(message);
-//    }
     public static void getMessageConversation(long conversationID) {
         SocketClient.getInstance().sendMessages("GET_MESSAGE_CONVERSATION " + conversationID + " " + SessionManager.getInstance().getCurrentUser().getId());
     }

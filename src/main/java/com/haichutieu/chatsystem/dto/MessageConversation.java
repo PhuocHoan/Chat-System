@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 public class MessageConversation {
     public long id; // message_id
     public long conversation_id;
-    public int senderID;
+    public Integer senderID;
     public String senderName;
     public Timestamp time;
     public String message;
@@ -13,7 +13,7 @@ public class MessageConversation {
     public MessageConversation() {
     }
 
-    public MessageConversation(long conversation_id, int senderID, String senderName, Timestamp time, String message) {
+    public MessageConversation(long conversation_id, Integer senderID, String senderName, Timestamp time, String message) {
         this.conversation_id = conversation_id;
         this.senderID = senderID;
         this.senderName = senderName;
@@ -21,7 +21,7 @@ public class MessageConversation {
         this.message = message;
     }
 
-    public MessageConversation(long id, long conversation_id, int senderID, String senderName, Timestamp time, String message) {
+    public MessageConversation(long id, long conversation_id, Integer senderID, String senderName, Timestamp time, String message) {
         this.id = id;
         this.conversation_id = conversation_id;
         this.senderID = senderID;

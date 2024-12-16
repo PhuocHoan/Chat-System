@@ -30,10 +30,10 @@ public class ReportGUI {
     TextField spamSearchField;
     @FXML
     ChoiceBox<String> spamFilter;
-    ObservableList<UserLoginTime> loginList;
-    ObservableList<SpamList> spamList;
-    FilteredList<SpamList> spamListFiltered;
-    SortedList<SpamList> spamListSorted;
+    private ObservableList<UserLoginTime> loginList;
+    private ObservableList<SpamList> spamList;
+    private FilteredList<SpamList> spamListFiltered;
+    private SortedList<SpamList> spamListSorted;
 
     public ReportGUI() {
         instance = this;
@@ -43,6 +43,7 @@ public class ReportGUI {
         return instance;
     }
 
+    @FXML
     public void initialize() {
         SocketClient.getInstance().sendMessages("SPAM_LIST ALL");
         SocketClient.getInstance().sendMessages("LOGIN_HISTORY ALL");

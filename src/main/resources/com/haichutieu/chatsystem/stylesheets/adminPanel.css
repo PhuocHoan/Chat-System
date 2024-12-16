@@ -11,15 +11,17 @@
 .sidebar-btn {
     -fx-background-radius: 8px;
     -fx-pref-height: 50;
+    -fx-cursor: hand;
+    -fx-background-color: -fx-main-background;
+    -fx-text-fill: black;
+}
+
+.sidebar-btn:hover {
+    -fx-background-color: rgba(111, 104, 241, 0.73);
 }
 
 .tab-user-management {
 
-}
-
-#btn-default {
-    -fx-background-color: -fx-main-background;
-    -fx-text-fill: black;
 }
 
 #btn-chosen {
@@ -31,5 +33,15 @@
     -fx-background-radius: 8px;
     -fx-background-color: rgba(255, 0, 0, .5);
     -fx-pref-height: 50;
+    -fx-cursor: hand;
 }
 
+#btn-logout:hover {
+    -fx-background-color: rgba(216, 161, 161, 0.91);
+}
+
+.bar-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+}

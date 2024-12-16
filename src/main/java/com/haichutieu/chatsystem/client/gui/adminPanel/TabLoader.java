@@ -4,12 +4,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.Pane;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 
 public class TabLoader {
-    private Pane view;
 
     public Pane getPane(String fileName) {
+        Pane view;
         try {
             URL fileUrl = AdminPanel.class.getResource(fileName + ".fxml");
             if (fileUrl == null) {
@@ -17,11 +18,9 @@ public class TabLoader {
             }
 
             view = FXMLLoader.load(fileUrl);
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
         return view;
     }
 }

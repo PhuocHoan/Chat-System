@@ -16,7 +16,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<GridPane fx:id="tabPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #250B59);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.AdminPanelController">
+<GridPane fx:id="tabPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #250B59);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.AdminPanel">
     <columnConstraints>
         <ColumnConstraints hgrow="SOMETIMES" maxWidth="300.0" minWidth="10.0" prefWidth="10.0" />
         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -39,7 +39,7 @@
           </Label>
           <VBox prefHeight="200.0" prefWidth="100.0" spacing="8.0" VBox.vgrow="ALWAYS">
               <children>
-                  <Button id="btn-default" fx:id="userBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleUserButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User Management" textFill="#16111a">
+                  <Button fx:id="userBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleUserButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User Management" textFill="#16111a">
                       <VBox.margin>
                           <Insets />
                       </VBox.margin>
@@ -50,7 +50,7 @@
                           <Font name="System Bold" size="16.0" />
                       </font>
                   </Button>
-                  <Button id="btn-default" fx:id="groupBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleGroupButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Chat Group" textFill="#16111a">
+                  <Button fx:id="groupBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleGroupButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Chat Group" textFill="#16111a">
                       <padding>
                           <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                       </padding>
@@ -61,7 +61,7 @@
                           <Insets />
                       </VBox.margin>
                   </Button>
-               <Button id="btn-default" fx:id="friendBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="10.0" layoutY="68.0" mnemonicParsing="false" onAction="#handleFriendButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User &amp; Friends" textFill="#16111a">
+               <Button fx:id="userAndFriendBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="10.0" layoutY="68.0" mnemonicParsing="false" onAction="#handleUserAndFriendButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="User &amp; Friends" textFill="#16111a">
                   <padding>
                      <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                   </padding>
@@ -69,7 +69,7 @@
                      <Font name="System Bold" size="16.0" />
                   </font>
                </Button>
-                  <Button id="btn-default" fx:id="reportBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleReportLogButtonAction" prefHeight="45.0" prefWidth="1.0E7" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Report &amp; Log" textFill="#16111a">
+                  <Button fx:id="reportBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleReportLogButtonAction" prefHeight="45.0" prefWidth="1.0E7" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Report &amp; Log" textFill="#16111a">
                       <padding>
                           <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                       </padding>
@@ -77,7 +77,7 @@
                           <Font name="System Bold" size="16.0" />
                       </font>
                   </Button>
-                  <Button id="btn-default" fx:id="statisticBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleStatisticButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Statistics" textFill="#16111a">
+                  <Button fx:id="statisticBtn" alignment="BASELINE_LEFT" graphicTextGap="15.0" mnemonicParsing="false" onAction="#handleStatisticButtonAction" prefHeight="45.0" prefWidth="100000.0" styleClass="sidebar-btn" stylesheets="@adminPanel.css" text="Statistics" textFill="#16111a">
                       <padding>
                           <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
                       </padding>
@@ -87,7 +87,7 @@
                   </Button>
               </children>
           </VBox>
-          <Button id="btn-logout" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="20.0" layoutY="241.0" mnemonicParsing="false" prefHeight="45.0" prefWidth="1000000.0" stylesheets="@adminPanel.css" text="Logout" textFill="WHITE">
+          <Button id="btn-logout" alignment="BASELINE_LEFT" graphicTextGap="15.0" layoutX="20.0" layoutY="241.0" mnemonicParsing="false" onMouseClicked="#logout" prefHeight="45.0" prefWidth="1000000.0" stylesheets="@adminPanel.css" text="Logout" textFill="WHITE">
               <padding>
                   <Insets bottom="5.0" left="15.0" right="15.0" top="5.0" />
               </padding>

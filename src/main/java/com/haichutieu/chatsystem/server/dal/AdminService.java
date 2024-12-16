@@ -1,10 +1,11 @@
 package com.haichutieu.chatsystem.server.dal;
 
-import com.haichutieu.chatsystem.dto.FriendCount;
-import com.haichutieu.chatsystem.dto.SpamList;
+import com.haichutieu.chatsystem.dto.*;
+import jakarta.persistence.Tuple;
 import org.hibernate.Session;
 
-import java.util.List;
+import java.sql.Timestamp;
+import java.util.*;
 
 public class AdminService {
     public static List<SpamList> fetchAllSpamList() {
@@ -71,6 +72,125 @@ public class AdminService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    // get list of group chat, not dual group
+    public static List<Conversation> getConversation() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                        from Conversation c 
+                        where c.isGroup = true
+                    """, Conversation.class).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // get list member of a conversation
+    public static List<MemberConversation> getMemberConversation(long conversationID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createNativeQuery("""
+                        select c.id, c.name, cm.is_admin
+                        from conversation_member cm join customer c
+                        on cm.customer_id = c.id
+                        where cm.conversation_id = :conversationID
+                    """, MemberConversation.class).setParameter("conversationID", conversationID).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // get list of login user
+    public static List<OnlineUserCount> getOnlineUserCountList() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createNativeQuery("""
+                    select c.id, 
+                           c.name,
+                           c.create_date,
+                           count(l.time) as login_times,
+                           sum(l.number_people_chat_with) as number_people_chat_with,
+                           sum(l.number_group_chat_with) as number_group_chat_with 
+                    from login_time l 
+                    join customer c
+                    on c.id = l.customer_id
+                    group by c.id
+                    """, OnlineUserCount.class).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // get list of login user with time range
+    public static List<OnlineUserCount> getOnlineUserCountList(Timestamp from, Timestamp to) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createNativeQuery("""
+                    select c.id, 
+                           c.name,
+                           c.create_date,
+                           count(l.time) as login_times,
+                           sum(l.number_people_chat_with) as number_people_chat_with,
+                           sum(l.number_group_chat_with) as number_group_chat_with
+                    from login_time l
+                    join customer c
+                    on c.id = l.customer_id
+                    where l.time >= :from and l.time <= :to
+                    group by c.id
+                    """, OnlineUserCount.class).setParameter("from", from).setParameter("to", to).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static Map<Integer, List<Long>> getNewUsersMonthly() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            List<Tuple> results = session.createNativeQuery("""
+                    SELECT date_part('year', create_date) AS year, date_part('month', create_date) AS month, COUNT(create_date) AS count
+                    FROM customer
+                    GROUP BY year, month
+                    ORDER BY year, month
+                    """, Tuple.class).getResultList();
+
+            Map<Integer, List<Long>> newUsersCount = new HashMap<>();
+
+            results.forEach(result -> {
+                int year = ((Number) result.get("year")).intValue();
+                int month = ((Number) result.get("month")).intValue();
+                long count = ((Number) result.get("count")).longValue();
+
+                newUsersCount.computeIfAbsent(year, k -> new ArrayList<>(Collections.nCopies(12, 0L)));
+                newUsersCount.get(year).set(month - 1, count);
+            });
+
+            return newUsersCount;
+        }
+    }
+
+    public static Map<Integer, List<Long>> getAppUsageMonthly() {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            List<Tuple> results = session.createNativeQuery("""
+                    SELECT date_part('year', time) AS year, date_part('month', time) AS month, COUNT(time) AS count
+                    FROM login_time
+                    GROUP BY year, month
+                    ORDER BY year, month
+                    """, Tuple.class).getResultList();
+
+            Map<Integer, List<Long>> appUsageCount = new HashMap<>();
+
+            results.forEach(result -> {
+                int year = ((Number) result.get("year")).intValue();
+                int month = ((Number) result.get("month")).intValue();
+                long count = ((Number) result.get("count")).longValue();
+
+                appUsageCount.computeIfAbsent(year, k -> new ArrayList<>(Collections.nCopies(12, 0L))); // create list of 12 months if not exist to value 0 type Long
+                appUsageCount.get(year).set(month - 1, count); // set count to the corresponding month
+            });
+
+            return appUsageCount;
         }
     }
 }
