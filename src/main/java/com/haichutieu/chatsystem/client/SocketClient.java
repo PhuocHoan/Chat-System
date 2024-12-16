@@ -197,6 +197,12 @@ public class SocketClient {
             case "FETCH_ONLINE_USER_COUNT_LIST":
                 AdminController.handleOnlineUserCountList(parts[1]);
                 break;
+            case "FETCH_NEW_USERS_MONTHLY":
+                AdminController.handleNewUsersMonthly(parts[1]);
+                break;
+            case "FETCH_APP_USAGE_MONTHLY":
+                AdminController.handleAppUsageMonthly(parts[1]);
+                break;
         }
     }
 }

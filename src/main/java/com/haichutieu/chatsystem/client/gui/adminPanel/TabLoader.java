@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.net.URL;
 
 public class TabLoader {
-    private Pane view;
 
     public Pane getPane(String fileName) {
+        Pane view;
         try {
             URL fileUrl = AdminPanel.class.getResource(fileName + ".fxml");
             if (fileUrl == null) {
@@ -18,8 +18,6 @@ public class TabLoader {
             }
 
             view = FXMLLoader.load(fileUrl);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

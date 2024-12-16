@@ -42,7 +42,7 @@ public class ChatGroup {
     public static ChatGroup getInstance() {
         return instance;
     }
-    
+
     @FXML
     public void initialize() {
         // Make the screen (container) focusable
@@ -141,15 +141,11 @@ public class ChatGroup {
     }
 
     private void addItemToGroupList(Conversation item) {
-        Platform.runLater(() -> {
-            groupTable.getItems().add(item);
-        });
+        Platform.runLater(() -> groupTable.getItems().add(item));
     }
 
     private void removeItemFromGroupList(Conversation item) {
-        Platform.runLater(() -> {
-            groupTable.getItems().remove(item);
-        });
+        Platform.runLater(() -> groupTable.getItems().remove(item));
     }
 
     public void onFetchGroupList(List<Conversation> groupListReceive) {
@@ -158,8 +154,6 @@ public class ChatGroup {
 
     public void onFetchMemberList(List<MemberConversation> memberListReceive) {
         memberList.setAll(memberListReceive);
-        Platform.runLater(() -> {
-            membersTable.setItems(memberList);
-        });
+        Platform.runLater(() -> membersTable.setItems(memberList));
     }
 }

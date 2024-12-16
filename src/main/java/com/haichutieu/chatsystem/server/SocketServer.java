@@ -210,6 +210,10 @@ public class SocketServer {
                 return handleOnlineUserCountList();
             case "FETCH_ONLINE_USER_COUNT_TIME_RANGE_LIST":
                 return handleOnlineUserCountTimeRangeList(content);
+            case "FETCH_NEW_USERS_MONTHLY":
+                return handleNewUsersMonthly();
+            case "FETCH_APP_USAGE_MONTHLY":
+                return handleAppUsageMonthly();
             default:
                 throw new IllegalStateException("Unexpected value: " + command);
         }
@@ -770,6 +774,16 @@ public class SocketServer {
         Timestamp toDate = Timestamp.valueOf(parts[1]);
         List<OnlineUserCount> onlineUserCountList = AdminService.getOnlineUserCountList(fromDate, toDate);
         return "FETCH_ONLINE_USER_COUNT_LIST " + Util.serializeObject(onlineUserCountList);
+    }
+
+    private String handleNewUsersMonthly() {
+        Map<Integer, List<Long>> newUsers = AdminService.getNewUsersMonthly();
+        return "FETCH_NEW_USERS_MONTHLY " + Util.serializeObject(newUsers);
+    }
+
+    private String handleAppUsageMonthly() {
+        Map<Integer, List<Long>> appUsage = AdminService.getAppUsageMonthly();
+        return "FETCH_APP_USAGE_MONTHLY " + Util.serializeObject(appUsage);
     }
 
     private String handleGetFriendRequest(String content) {

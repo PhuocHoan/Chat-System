@@ -9,6 +9,7 @@ module system.chatsystem {
     requires com.fasterxml.jackson.databind;
     requires java.mail;
     requires java.desktop;
+    requires org.postgresql.jdbc;
 
 
     exports com.haichutieu.chatsystem.client.gui;

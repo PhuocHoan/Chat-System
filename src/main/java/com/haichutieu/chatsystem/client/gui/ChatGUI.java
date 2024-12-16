@@ -343,13 +343,16 @@ public class ChatGUI {
         String text;
         if (chat.senderName == null && !chat.latestMessage.isEmpty()) {
             text = chat.latestMessage;
-        } else if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
-            text = "You: " + chat.latestMessage;
         } else {
-            if (chat.isGroup) {
-                text = chat.senderName + ": " + chat.latestMessage;
+            assert chat.senderName != null;
+            if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
+                text = "You: " + chat.latestMessage;
             } else {
-                text = chat.latestMessage;
+                if (chat.isGroup) {
+                    text = chat.senderName + ": " + chat.latestMessage;
+                } else {
+                    text = chat.latestMessage;
+                }
             }
         }
         if (text.length() > 30) {

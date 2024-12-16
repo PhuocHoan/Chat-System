@@ -39,3 +39,9 @@
 #btn-logout:hover {
     -fx-background-color: rgba(216, 161, 161, 0.91);
 }
+
+.bar-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+}

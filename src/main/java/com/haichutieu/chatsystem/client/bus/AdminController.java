@@ -8,6 +8,7 @@ import com.haichutieu.chatsystem.util.Util;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 
 public class AdminController {
     public static void handleLoginAdmin(String message) {
@@ -160,5 +161,27 @@ public class AdminController {
         List<OnlineUserCount> onlineUserCount = Util.deserializeObject(message, new TypeReference<>() {
         });
         UserAndFriendGUI.getInstance().onOnlineUserTable(onlineUserCount);
+    }
+
+    // fetch number of years have new users
+    public static void fetchNewUsersMonthly() {
+        SocketClient.getInstance().sendMessages("FETCH_NEW_USERS_MONTHLY ALL");
+    }
+
+    public static void handleNewUsersMonthly(String message) {
+        Map<Integer, List<Long>> newUsers = Util.deserializeObject(message, new TypeReference<>() {
+        });
+        Statistics.getInstance().onFetchNewUserMonthly(newUsers);
+    }
+
+    // fetch number of years have new users
+    public static void fetchAppUsageMonthly() {
+        SocketClient.getInstance().sendMessages("FETCH_APP_USAGE_MONTHLY ALL");
+    }
+
+    public static void handleAppUsageMonthly(String message) {
+        Map<Integer, List<Long>> appUsage = Util.deserializeObject(message, new TypeReference<>() {
+        });
+        Statistics.getInstance().onFetchAppUsageMonthly(appUsage);
     }
 }

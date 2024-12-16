@@ -42,12 +42,12 @@
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin>
             </HBox>
-            <BarChart fx:id="yearlyNewUser" title="New Users" titleSide="BOTTOM" VBox.vgrow="SOMETIMES">
+            <BarChart fx:id="yearlyNewUser" title="Yearly New Users" titleSide="BOTTOM" VBox.vgrow="SOMETIMES">
               <xAxis>
-                <CategoryAxis side="BOTTOM" fx:id="xMonthNewUser" />
+                <CategoryAxis animated="false" label="Month" side="BOTTOM" fx:id="xMonthNewUser" />
               </xAxis>
               <yAxis>
-                <NumberAxis fx:id="yQuantityNewUsers" side="LEFT" />
+                <NumberAxis label="Count" side="LEFT" />
               </yAxis>
             </BarChart>
          </children>
@@ -85,12 +85,12 @@
                   </HBox>
                </children>
             </HBox>
-            <BarChart fx:id="yearlyAppUsage" title="App Usage" titleSide="BOTTOM" VBox.vgrow="SOMETIMES">
+            <BarChart fx:id="yearlyAppUsage" title="Yearly App Usage" titleSide="BOTTOM" VBox.vgrow="SOMETIMES">
                <xAxis>
-                  <CategoryAxis side="BOTTOM" fx:id="xMonthAppUsage" />
+                  <CategoryAxis animated="false" label="Month" side="BOTTOM" fx:id="xMonthAppUsage" />
                </xAxis>
                <yAxis>
-                  <NumberAxis fx:id="yQuantityAppUsage" side="LEFT" />
+                  <NumberAxis label="Count" side="LEFT" />
                </yAxis>
             </BarChart>
          </children>

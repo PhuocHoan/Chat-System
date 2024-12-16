@@ -1,10 +1,11 @@
 package com.haichutieu.chatsystem.server.dal;
 
 import com.haichutieu.chatsystem.dto.*;
+import jakarta.persistence.Tuple;
 import org.hibernate.Session;
 
 import java.sql.Timestamp;
-import java.util.List;
+import java.util.*;
 
 public class AdminService {
     public static List<SpamList> fetchAllSpamList() {
@@ -145,36 +146,51 @@ public class AdminService {
         return null;
     }
 
-    // get number of years have new users
-    public static Integer getYearsNewUsers() {
+    public static Map<Integer, List<Long>> getNewUsersMonthly() {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
-            return session.createNativeQuery("""
-                            select date_part('year', create_date) as year 
-                            from customer 
-                            group by year
-                            """, Integer.class)
-                    .getSingleResult();
-        } catch (Exception e) {
-            e.printStackTrace();
+            List<Tuple> results = session.createNativeQuery("""
+                    SELECT date_part('year', create_date) AS year, date_part('month', create_date) AS month, COUNT(create_date) AS count
+                    FROM customer
+                    GROUP BY year, month
+                    ORDER BY year, month
+                    """, Tuple.class).getResultList();
+
+            Map<Integer, List<Long>> newUsersCount = new HashMap<>();
+
+            results.forEach(result -> {
+                int year = ((Number) result.get("year")).intValue();
+                int month = ((Number) result.get("month")).intValue();
+                long count = ((Number) result.get("count")).longValue();
+
+                newUsersCount.computeIfAbsent(year, k -> new ArrayList<>(Collections.nCopies(12, 0L)));
+                newUsersCount.get(year).set(month - 1, count);
+            });
+
+            return newUsersCount;
         }
-        return null;
     }
 
-    // get number of new users by month and year
-    public static Integer getNewUsersByMonthYear(int year, int month) {
+    public static Map<Integer, List<Long>> getAppUsageMonthly() {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
-            return session.createNativeQuery("""
-                            select count(create_date)
-                             from customer
-                             where date_part('month', create_date) = :month 
-                             and date_part('year', create_date) = :year
-                            """, Integer.class)
-                    .setParameter("month", month)
-                    .setParameter("year", year)
-                    .getSingleResult();
-        } catch (Exception e) {
-            e.printStackTrace();
+            List<Tuple> results = session.createNativeQuery("""
+                    SELECT date_part('year', time) AS year, date_part('month', time) AS month, COUNT(time) AS count
+                    FROM login_time
+                    GROUP BY year, month
+                    ORDER BY year, month
+                    """, Tuple.class).getResultList();
+
+            Map<Integer, List<Long>> appUsageCount = new HashMap<>();
+
+            results.forEach(result -> {
+                int year = ((Number) result.get("year")).intValue();
+                int month = ((Number) result.get("month")).intValue();
+                long count = ((Number) result.get("count")).longValue();
+
+                appUsageCount.computeIfAbsent(year, k -> new ArrayList<>(Collections.nCopies(12, 0L))); // create list of 12 months if not exist to value 0 type Long
+                appUsageCount.get(year).set(month - 1, count); // set count to the corresponding month
+            });
+
+            return appUsageCount;
         }
-        return null;
     }
 }

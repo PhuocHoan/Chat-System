@@ -55,7 +55,7 @@ public class MessageService {
                          lm.message AS latest_message,
                          lm.time AS latest_time,
                          c.is_group,
-                         COALESCE(lm.status, FALSE) AS is_read
+                         lm.status AS is_read
                      FROM
                          conversation c
                      JOIN
@@ -162,7 +162,7 @@ public class MessageService {
             Message messagePersist = new Message(message.conversation_id, message.senderID, message.time, message.message);
             session.persist(messagePersist);
 
-            for (var member_id : members) {
+            for (int member_id : members) {
                 if (member_id == message.senderID) {
                     session.persist(new MessageDisplay(messagePersist, member_id, true));
                     continue;
