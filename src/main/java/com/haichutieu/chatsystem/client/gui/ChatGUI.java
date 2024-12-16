@@ -341,10 +341,13 @@ public class ChatGUI {
 
         Text content = new Text();
         String text;
-        if (chat.senderName == null && !chat.latestMessage.isEmpty()) {
-            text = chat.latestMessage;
+        if (chat.senderName == null) {
+            if (!chat.latestMessage.isEmpty()) {
+                text = chat.latestMessage; // system message
+            } else {
+                text = "";
+            }
         } else {
-            assert chat.senderName != null;
             if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
                 text = "You: " + chat.latestMessage;
             } else {
@@ -379,11 +382,13 @@ public class ChatGUI {
         // update conversation time, and check for user online every 1 minute
         scheduler.scheduleAtFixedRate(() -> {
             // update conversation time
-            conversationTimeStamp.setText(formatConversationTimeStamp(chat.latestTime));
-            if (conversationTimeStamp.getText().equals("Just now")) {
-                conversationName.setWrappingWidth(210);
-            } else {
-                conversationName.setWrappingWidth(230);
+            if (chat.latestTime != null) {
+                conversationTimeStamp.setText(formatConversationTimeStamp(chat.latestTime));
+                if (conversationTimeStamp.getText().equals("Just now")) {
+                    conversationName.setWrappingWidth(210);
+                } else {
+                    conversationName.setWrappingWidth(230);
+                }
             }
         }, 0, 1, TimeUnit.MINUTES);
 
@@ -419,7 +424,7 @@ public class ChatGUI {
             avatar.setFitHeight(131);
             avatar.setFitWidth(95);
             avatar.setPreserveRatio(true);
-            isFocusingConversation = chat;
+            isFocusingConversation = new ChatList(chat);
             ChatAppController.getMessageConversation(chat.conversationID);
             ChatAppController.updateStatusConversation(chat.conversationID); // update has seen status conversation
             headerName.setText(chat.conversationName);
@@ -495,16 +500,12 @@ public class ChatGUI {
     void onRemove(MessageConversation message) {
         if (message.senderID != SessionManager.getInstance().getCurrentUser().getId()) {
             // if message is not mine then just remove on my side
-            ChatAppController.removeMessage(message.id);
-            messages.remove(message);
-            removeItemFromMessageConversation(message);
+            removeMessageMe(message);
         } else {
             // my message
             if ((System.currentTimeMillis() - message.time.getTime()) / (1000 * 60 * 60 * 24) > 1) {
                 // if message is over 1 day then just remove on my side
-                ChatAppController.removeMessage(message.id);
-                messages.remove(message);
-                removeItemFromMessageConversation(message);
+                removeMessageMe(message);
             } else {
                 // remove for all members
                 ChatAppController.removeMessage(message);
@@ -513,14 +514,44 @@ public class ChatGUI {
     }
 
     void onRemoveAll() {
-        ChatAppController.removeAllMessage(isFocusingConversation);
+        ChatAppController.removeAllMessage(isFocusingConversation.conversationID);
         messages.clear();
         removeAllItemFromMessageConversation();
-        conversations.remove(isFocusingConversation);
+        conversations.removeIf(c -> c.conversationID == isFocusingConversation.conversationID);
         Platform.runLater(() -> {
             mainChatContainer.setVisible(false);
             rightSideBar.setVisible(false);
         });
+    }
+
+    // remove message on my side
+    void removeMessageMe(MessageConversation message) {
+        ChatAppController.removeMessage(message.id);
+        messages.remove(message);
+        removeItemFromMessageConversation(message);
+        // if remove the latest message then update the latest message in conversation
+        if (message.time.equals(isFocusingConversation.latestTime)) {
+            updateConversation(isFocusingConversation, messages.isEmpty() ? null : messages.getLast());
+        }
+    }
+
+    // for remove message
+    void updateConversation(ChatList conversation, MessageConversation messagesServer) {
+        ChatList updateConversation = new ChatList(conversation);
+        if (messagesServer == null) {
+            updateConversation.latestMessage = "";
+            updateConversation.latestTime = null;
+            updateConversation.senderName = null;
+        } else {
+            updateConversation.latestMessage = messagesServer.message;
+            updateConversation.latestTime = messagesServer.time;
+            updateConversation.senderName = messagesServer.senderName;
+        }
+        if (isFocusingConversation != null && conversation.conversationID == isFocusingConversation.conversationID) {
+            updateConversation.isSeen = true;
+            isFocusingConversation = new ChatList(updateConversation);
+        }
+        addNewConversation(updateConversation);
     }
 
     public String formatConversationTimeStamp(Timestamp timestamp) {
@@ -571,15 +602,16 @@ public class ChatGUI {
         if (message.senderID == SessionManager.getInstance().getCurrentUser().getId()) {
             conversation.isSeen = true;
             conversation.conversationName = isFocusingConversation.conversationName;
+            isFocusingConversation = new ChatList(conversation);
         }
         addNewConversation(conversation);
         messages.add(message);
         addItemToMessageConversation(message);
     }
 
-    public void removeMessageAll(MessageConversation message) {
-        // when user chat to a conversation or message from another conversation comes in
-        if (message.conversation_id == isFocusingConversation.conversationID) {
+    // receive remove message from server, this message can be from this user remove or from another user remove
+    public void removeMessageAll(MessageConversation message, List<MessageConversation> messagesServer) {
+        if (isFocusingConversation != null && message.conversation_id == isFocusingConversation.conversationID) {
             // if user is focusing conversation that someone removes message
             messages.removeIf((oldMessage) ->
                     {
@@ -590,6 +622,14 @@ public class ChatGUI {
                         return false;
                     }
             );
+        }
+        for (ChatList conversation : conversations) {
+            if (conversation.conversationID == message.conversation_id) {
+                if (message.time.equals(conversation.latestTime)) {
+                    updateConversation(conversation, messagesServer.isEmpty() ? null : messagesServer.getLast());
+                }
+                break;
+            }
         }
     }
 }

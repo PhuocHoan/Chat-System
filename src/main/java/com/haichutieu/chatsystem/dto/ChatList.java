@@ -24,6 +24,16 @@ public class ChatList {
         this.isSeen = isSeen;
     }
 
+    public ChatList(ChatList chatList) {
+        this.conversationID = chatList.conversationID;
+        this.conversationName = chatList.conversationName;
+        this.senderName = chatList.senderName;
+        this.latestMessage = chatList.latestMessage;
+        this.latestTime = chatList.latestTime;
+        this.isGroup = chatList.isGroup;
+        this.isSeen = chatList.isSeen;
+    }
+
     @Override
     public String toString() {
         return "ChatList{" +

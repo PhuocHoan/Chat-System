@@ -517,14 +517,16 @@ public class SocketServer {
         }
         var memberConversation = MessageService.getMemberConversation(message.conversation_id);
         MessageService.removeMessage(message.id);
-        String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message);
+        String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message) + " END ";
         // send message to all members in same conversation
         assert memberConversation != null;
         memberConversation.forEach(member -> {
             AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
+            var messageConversation = MessageService.getMessageConversation(message.conversation_id, member);
+            String messageServer = removeMessage + Util.serializeObject(messageConversation);
             if (memberChannel != null) {
                 try {
-                    memberChannel.write(ByteBuffer.wrap((removeMessage + "\n").getBytes())).get();
+                    memberChannel.write(ByteBuffer.wrap((messageServer + "\n").getBytes())).get();
                 } catch (ExecutionException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -535,8 +537,7 @@ public class SocketServer {
     private String removeAllMessageMe(String content) {
         String[] parts = content.split(" END ", 2);
         try {
-            MessageService.removeAllMessage(Util.deserializeObject(parts[0], new TypeReference<>() {
-            }), Integer.parseInt(parts[1]));
+            MessageService.removeAllMessage(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

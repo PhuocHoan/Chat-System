@@ -126,17 +126,21 @@ public class ChatAppController {
     }
 
     // remove all message on my side
-    public static void removeAllMessage(ChatList conversation) {
-        SocketClient.getInstance().sendMessages("REMOVE_ALL_MESSAGE_ME " + Util.serializeObject(conversation) + " END " + SessionManager.getInstance().getCurrentUser().getId());
+    public static void removeAllMessage(long conversationID) {
+        SocketClient.getInstance().sendMessages("REMOVE_ALL_MESSAGE_ME " + conversationID + " END " + SessionManager.getInstance().getCurrentUser().getId());
     }
 
     // handle remove message for all members
     public static void handleRemoveMessageAll(String message) {
+        String[] parts = message.split(" END ", 2);
         MessageConversation messageRemove;
+        List<MessageConversation> messagesServer;
         try {
-            messageRemove = Util.deserializeObject(message, new TypeReference<>() {
+            messageRemove = Util.deserializeObject(parts[0], new TypeReference<>() {
             });
-            ChatGUI.getInstance().removeMessageAll(messageRemove);
+            messagesServer = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+            ChatGUI.getInstance().removeMessageAll(messageRemove, messagesServer);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
