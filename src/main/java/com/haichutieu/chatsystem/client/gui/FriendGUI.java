@@ -1,6 +1,7 @@
 package com.haichutieu.chatsystem.client.gui;
 
 import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.Customer;
@@ -112,18 +113,7 @@ public class FriendGUI {
 
     public void onReceiveFriendList(boolean success, List<Customer> friendList) {
         Platform.runLater(() -> {
-            if (!success) {
-                friendContainer.getChildren().remove(loading);
-                friendContainer.getChildren().add(new Label("Failed to fetch friend list."));
-                return;
-            }
-
-            if (friendList.isEmpty()) {
-                friendContainer.getChildren().remove(loading);
-                friendContainer.getChildren().add(new Label("You have no friends yet."));
-                return;
-            }
-
+            friendContainer.getChildren().clear();
             filteredFriends = new FilteredList<>(friends, p -> true);
             filteredFriends.addListener((ListChangeListener<Customer>) c -> {
                 while (c.next()) {
@@ -163,7 +153,7 @@ public class FriendGUI {
     // Called when your friend request if accepted from a user
     public void onAcceptInvitation(Customer friend) {
         Platform.runLater(() -> {
-            friends.addFirst(friend);
+            friends.add(friend);
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Friend Request");
@@ -304,8 +294,8 @@ public class FriendGUI {
     }
 
     private void chatWithPerson(Customer friend) {
-        SceneController.setScene("chat");
-        ChatGUI.getInstance().openChat(friend);
+        int myId = SessionManager.getInstance().getCurrentUser().getId();
+        FriendsController.openChatWith(myId, friend.getId());
     }
 
     private void blockFriend(Customer friend, GridPane friendCard) {
@@ -453,7 +443,7 @@ public class FriendGUI {
                 return;
             }
 
-            if (addedMembersList.size() < 3) {
+            if (addedMembersList.size() < 2) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("You must add at least 1 more member to create a group.");
@@ -607,15 +597,14 @@ public class FriendGUI {
     private MenuButton createActionsMenu(Customer user) {
         MenuButton actions = new MenuButton("Actions");
         MenuItem m1 = new MenuItem("Chat");
-        m1.setOnAction(e -> {
-        });
-        MenuItem m2 = new MenuItem("New Group");
-        m2.setOnAction(e -> createNewGroup(user));
+        m1.setOnAction(e -> chatWithPerson(user));
+//        MenuItem m2 = new MenuItem("New Group");
+//        m2.setOnAction(e -> createNewGroup(user));
         MenuItem m3 = new MenuItem("Add Friend");
         m3.setOnAction(e -> addFriend(user));
         MenuItem m4 = new MenuItem("Report Spam");
         m4.setOnAction(e -> reportSpam(user));
-        actions.getItems().addAll(m1, m2, m3, m4);
+        actions.getItems().addAll(m1, m3, m4);
         return actions;
     }
 
@@ -626,18 +615,7 @@ public class FriendGUI {
 
     public void onReceiveFriendRequestList(boolean success, List<Customer> invitationList) {
         Platform.runLater(() -> {
-            if (!success) {
-                friendContainer.getChildren().remove(loading);
-                friendContainer.getChildren().add(new Label("Failed to fetch friend requests."));
-                return;
-            }
-
-            if (invitationList.isEmpty()) {
-                invitationContainer.getChildren().remove(loading);
-                invitationContainer.getChildren().add(new Label("You have no friend requests yet."));
-                return;
-            }
-
+            invitationContainer.getChildren().clear();
             FilteredList<Customer> filteredFriendInvitations = new FilteredList<>(friendInvitations, p -> true);
             // Bind TextField to FilteredList
             friendRequestSearch.textProperty().addListener((obs, oldValue, newValue) -> {
@@ -677,17 +655,20 @@ public class FriendGUI {
     }
 
     public void onRejectStatus(boolean success, int friendId) {
-        Platform.runLater(() -> {
-            if (!success) {
+        if (!success) {
+            Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("ERROR Failed to reject friend request.");
                 alert.setContentText("Please try again later.");
                 alert.show();
-            }
+            });
+            return;
+        }
 
-            friendInvitations.removeIf(f -> f.getId() == friendId);
-        });
+        friendInvitations.removeIf(f -> f.getId() == friendId);
+        int userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
     }
 
     private void acceptInvitation(Customer user) {
@@ -697,25 +678,31 @@ public class FriendGUI {
     }
 
     public void onAcceptStatus(boolean success, Customer friend) {
-        Platform.runLater(() -> {
-            if (!success) {
+        if (!success) {
+            Platform.runLater(() -> {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("ERROR Failed to accept friend request.");
                 alert.setContentText("Please try again later.");
                 alert.show();
-            }
+            });
+            return;
+        }
 
-            friendInvitations.removeIf(f -> f.getId() == friend.getId());
-            friends.add(friend);
-        });
+        friendInvitations.removeIf(f -> f.getId() == friend.getId());
+        friends.add(friend);
+
+        int userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
+        SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
     }
 
     public void onReceiveNewFriendRequest(Customer friend) {
-        System.out.println("Im here i guess");
-        Platform.runLater(() -> {
-            friendInvitations.addAll(friend);
-        });
+        System.out.println("Received new friend request from " + friend.getName());
+        friendInvitations.add(friend);
+        int userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
+
     }
 
     public void onNewOnlineUser(int userId) {
@@ -753,8 +740,8 @@ public class FriendGUI {
     }
 
     public void onUnfriendFrom(int friendId) {
-        Platform.runLater(() -> {
-            friends.removeIf(f -> f.getId() == friendId);
-        });
+        friends.removeIf(f -> f.getId() == friendId);
+        int userId = SessionManager.getInstance().getCurrentUser().getId();
+        SocketClient.getInstance().sendMessages("GET_FRIEND_LIST USER " + userId);
     }
 }

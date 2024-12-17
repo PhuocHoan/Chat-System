@@ -14,6 +14,7 @@ import com.haichutieu.chatsystem.util.Util;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -151,6 +152,7 @@ public class ChatAppController {
     }
 
     public static void handleCreateGroup(String part) {
+        String[] parts = part.split(" ", 2);
         Platform.runLater(() -> {
             if (part.startsWith("ERROR")) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -158,12 +160,17 @@ public class ChatAppController {
                 alert.setHeaderText("Failed to create group.");
                 alert.show();
             } else {
-                ChatList conversation;
                 try {
-                    conversation = Util.deserializeObject(part, new TypeReference<>() {
+                    ChatList conversation;
+                    conversation = Util.deserializeObject(parts[1], new TypeReference<>() {
                     });
-                    ChatGUI.getInstance().createGroup(conversation);
+
+                    //ChatGUI.getInstance().createGroup(conversation);
                     if (part.startsWith("OK")) {
+                        MessageConversation message = new MessageConversation(conversation.conversationID, new Timestamp(System.currentTimeMillis()), "Group created");
+                        conversation.latestMessage = message.message;
+                        conversation.latestTime = message.time;
+                        SocketClient.getInstance().sendMessages("MESSAGE " + Util.serializeObject(conversation) + " END " + Util.serializeObject(message));
                         SceneController.setScene("chat");
                     }
                 } catch (Exception e) {
@@ -173,12 +180,27 @@ public class ChatAppController {
         });
     }
 
-    public static void addGroupMember(long conversationID, String json) {
-        SocketClient.getInstance().sendMessages("GROUP ADD_MEMBER " + conversationID + " " + json);
+    public static void addGroupMember(ChatList chatList, String json, List<Customer> members) {
+        SocketClient.getInstance().sendMessages("GROUP ADD_MEMBER " + chatList.conversationID + " " + json);
+
+        StringBuilder sb = new StringBuilder();
+        for (Customer member : members) {
+            sb.append(member.getUsername()).append(", ");
+        }
+        sb.delete(sb.length() - 2, sb.length());
+        sb.append(" was added to group");
+
+        MessageConversation message = new MessageConversation(chatList.conversationID, new Timestamp(System.currentTimeMillis()), sb.toString());
+        message.senderID = null;
+        SocketClient.getInstance().sendMessages("MESSAGE " + Util.serializeObject(chatList) + " END " + Util.serializeObject(message));
     }
 
-    public static void removeGroupMember(long conversationID, int id) {
-        SocketClient.getInstance().sendMessages("GROUP REMOVE_MEMBER " + conversationID + " " + id);
+    public static void removeGroupMember(ChatList conversation, MemberConversation member) {
+        SocketClient.getInstance().sendMessages("GROUP REMOVE_MEMBER " + conversation.conversationID + " " + member.getId());
+
+        MessageConversation message = new MessageConversation(conversation.conversationID, new Timestamp(System.currentTimeMillis()), member.getUsername() + " left or was removed from group");
+        message.senderID = null;
+        SocketClient.getInstance().sendMessages("MESSAGE " + Util.serializeObject(conversation) + " END " + Util.serializeObject(message));
     }
 
     public static void updateGroupName(long conversationID, String text) {
@@ -231,9 +253,13 @@ public class ChatAppController {
                 ChatGUI.getInstance().onAddGroupMember(conversationID, members);
                 break;
             case "REMOVE_MEMBER":
-                members = Util.deserializeObject(parts[3], new TypeReference<>() {
-                });
-                ChatGUI.getInstance().onRemoveGroupMember(conversationID, members);
+                if (status.equals("FROM")) {
+                    ChatGUI.getInstance().onRemoveGroupMember(conversationID);
+                    return;
+                }
+
+                ChatGUI.getInstance().onRemoveGroupMember(conversationID, Util.deserializeObject(parts[3], new TypeReference<>() {
+                }));
                 break;
             case "UPDATE_NAME":
                 ChatGUI.getInstance().onUpdateGroupName(conversationID, parts[3]);

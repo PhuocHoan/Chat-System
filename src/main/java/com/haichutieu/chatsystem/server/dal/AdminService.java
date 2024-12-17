@@ -92,7 +92,7 @@ public class AdminService {
     public static List<MemberConversation> getMemberConversation(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createNativeQuery("""
-                        select c.id, c.name, cm.is_admin
+                        select new MemberConversation(c.id, c.name, cm.is_admin)
                         from conversation_member cm join customer c
                         on cm.customer_id = c.id
                         where cm.conversation_id = :conversationID

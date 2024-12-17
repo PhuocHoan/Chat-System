@@ -36,12 +36,12 @@ public class MemberConversation {
         return name;
     }
 
-    public void setName(String username) {
-        this.username = username;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getUsername() {
-        return name;
+        return username;
     }
 
     public void setUsername(String username) {

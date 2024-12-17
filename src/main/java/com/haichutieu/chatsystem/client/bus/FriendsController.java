@@ -1,13 +1,17 @@
 package com.haichutieu.chatsystem.client.bus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.client.gui.ChatGUI;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
+import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.util.Util;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Set;
 
@@ -65,7 +69,15 @@ public class FriendsController {
     }
 
     public static void handleAddFriend(String message) {
-        FriendGUI.getInstance().onSendFriendRequest(!message.split(" ")[0].equals("ERROR"));
+        String[] parts = message.split(" ", 2);
+        if (message.startsWith("FROM")) {
+            Customer friend = Util.deserializeObject(parts[1], new TypeReference<>() {
+            });
+            FriendGUI.getInstance().onReceiveNewFriendRequest(friend);
+            return;
+        }
+
+        FriendGUI.getInstance().onSendFriendRequest(!parts[0].equals("ERROR"));
     }
 
     public static void handleSpam(String message) {
@@ -102,10 +114,6 @@ public class FriendsController {
             List<Customer> friendRequests = Util.deserializeObject(parts[1], new TypeReference<>() {
             });
             FriendGUI.getInstance().onReceiveFriendRequestList(true, friendRequests);
-        } else {
-            Customer friend = Util.deserializeObject(parts[1], new TypeReference<>() {
-            });
-            FriendGUI.getInstance().onReceiveNewFriendRequest(friend);
         }
     }
 
@@ -151,6 +159,27 @@ public class FriendsController {
         if (FriendGUI.getInstance() != null && SessionManager.getInstance() != null) {
             if (userId != SessionManager.getInstance().getCurrentUser().getId()) {
                 FriendGUI.getInstance().onOfflineUser(Integer.parseInt(message));
+            }
+        }
+    }
+
+    public static void openChatWith(int userId, int friendId) {
+        SocketClient.getInstance().sendMessages("OPEN_CHAT " + userId + " " + friendId);
+    }
+
+    public static void onOpenChatWith(String message) {
+        String[] parts = message.split(" ", 3);
+        int conversationId = Integer.parseInt(parts[1]);
+        if (parts[0].equals("OK")) {
+            // Check if the ChatList exists
+            ChatList chat = ChatGUI.getInstance().conversations.stream().filter(c -> c.conversationID == conversationId).findFirst().orElse(null);
+            if (chat != null) {
+                ChatGUI.getInstance().openChatWith(chat, true);
+            } else {
+                // Create new ChatList
+                ChatList newChat = Util.deserializeObject(parts[2], new TypeReference<>() {
+                });
+                ChatGUI.getInstance().openChatWith(newChat, false);
             }
         }
     }

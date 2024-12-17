@@ -180,6 +180,8 @@ public class SocketServer {
                 return handleCreateGroup(content);
             case "GROUP":
                 return handleGroup(content);
+            case "OPEN_CHAT":
+                return handleOpenChat(content);
             // Admin commands
             case "LOGIN_ADMIN":
                 return handleAdminLogin(content);
@@ -238,14 +240,7 @@ public class SocketServer {
                 return "ANSWER_INVITATION ACCEPT ERROR " + friendID;
             }
 
-            AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
-            if (friendChannel != null) {
-                try {
-                    friendChannel.write(ByteBuffer.wrap(("ANSWER_INVITATION ACCEPT FROM " + Util.serializeObject(user) + "\n").getBytes())).get();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            sendToUser(friendID, "ANSWER_INVITATION ACCEPT FROM " + Util.serializeObject(user));
 
             return "ANSWER_INVITATION ACCEPT OK " + Util.serializeObject(friend);
         } else if (type.equals("REJECT")) {
@@ -253,15 +248,7 @@ public class SocketServer {
                 return "ANSWER_INVITATION REJECT ERROR " + friendID;
             }
 
-            AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
-            if (friendChannel != null) {
-                try {
-                    assert user != null;
-                    friendChannel.write(ByteBuffer.wrap(("ANSWER_INVITATION REJECT FROM " + user.getUsername() + "\n").getBytes())).get();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            sendToUser(friendID, "ANSWER_INVITATION REJECT FROM " + user.getUsername());
 
             return "ANSWER_INVITATION REJECT OK " + friendID;
         }
@@ -277,15 +264,9 @@ public class SocketServer {
             return "ADD_FRIEND ERROR " + friendID;
         }
 
-        AsynchronousSocketChannel friendChannel = onlineUsers.get(friendID);
-        if (friendChannel != null) {
-            Customer user = CustomerService.getCustomerByID(userID);
-            try {
-                friendChannel.write(ByteBuffer.wrap(("GET_FRIEND_REQUEST NEW " + Util.serializeObject(user) + "\n").getBytes())).get();
-            } catch (ExecutionException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        Customer user = CustomerService.getCustomerByID(userID);
+        String message = "ADD_FRIEND FROM " + Util.serializeObject(user);
+        sendToUser(friendID, message);
 
         return "ADD_FRIEND OK " + friendID;
     }
@@ -527,14 +508,7 @@ public class SocketServer {
         // send message to all members in same conversation
         assert memberConversation != null;
         memberConversation.forEach(member -> {
-            AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
-            if (memberChannel != null) {
-                try {
-                    memberChannel.write(ByteBuffer.wrap((sendingMessage + "\n").getBytes())).get();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            sendToUser(member, sendingMessage);
         });
     }
 
@@ -558,14 +532,7 @@ public class SocketServer {
         // send message to all members in same conversation
         assert memberConversation != null;
         memberConversation.forEach(member -> {
-            AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
-            if (memberChannel != null) {
-                try {
-                    memberChannel.write(ByteBuffer.wrap((removeMessage + "\n").getBytes())).get();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            sendToUser(member, removeMessage);
         });
     }
 
@@ -876,16 +843,7 @@ public class SocketServer {
         chatList.conversationName = groupName;
         chatList.isGroup = true;
 
-        memberIDs.forEach(memberID -> {
-            AsynchronousSocketChannel channel = onlineUsers.get(memberID);
-            if (channel != null) {
-                try {
-                    channel.write(ByteBuffer.wrap(("CREATE_GROUP " + Util.serializeObject(chatList) + "\n").getBytes())).get();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        String message = "CREATE_GROUP " + Util.serializeObject(chatList);
 
         return "CREATE_GROUP OK " + Util.serializeObject(chatList);
     }
@@ -899,12 +857,12 @@ public class SocketServer {
             case "ADD_MEMBER":
                 if (MessageService.addMembersToGroupConversation(conversationID, Util.deserializeObject(content, new TypeReference<>() {
                 }))) {
-                    List<MemberConversation> users = MessageService.getMemberConversation(conversationID);
+                    List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
                     if (users != null) {
                         // Send the message to other members in the group
                         String sendingMessage = "GROUP ADD_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
                         users.forEach(user -> {
-                            sendToUser(user.id, sendingMessage);
+                            sendToUser(user.getId(), sendingMessage);
                         });
                         return sendingMessage;
                     }
@@ -914,12 +872,13 @@ public class SocketServer {
             case "REMOVE_MEMBER":
                 int memberID = Integer.parseInt(content);
                 if (MessageService.removeMemberFromGroupConversation(conversationID, memberID)) {
-                    List<MemberConversation> users = MessageService.getMemberConversation(conversationID);
+                    List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
                     if (users != null) {
                         // Send the message to other members in the group
+                        sendToUser(memberID, "GROUP REMOVE_MEMBER FROM " + conversationID + " null");
                         String sendingMessage = "GROUP REMOVE_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
                         users.forEach(user -> {
-                            sendToUser(user.id, sendingMessage);
+                            sendToUser(user.getId(), sendingMessage);
                         });
                         return sendingMessage;
                     }
@@ -927,7 +886,7 @@ public class SocketServer {
                 return "GROUP REMOVE_MEMBER ERROR " + conversationID;
 
             case "GET_MEMBERS":
-                List<MemberConversation> users = MessageService.getMemberConversation(conversationID);
+                List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
                 if (users == null) {
                     return "GROUP GET_MEMBERS ERROR " + conversationID;
                 }
@@ -937,10 +896,10 @@ public class SocketServer {
                 if (MessageService.updateGroupName(conversationID, content)) {
                     // Send the message to other members in the group
                     String sendingMessage = "GROUP UPDATE_NAME OK " + conversationID + " " + content;
-                    List<MemberConversation> members = MessageService.getMemberConversation(conversationID);
+                    List<MemberConversation> members = MessageService.getConversationMembers(conversationID);
                     assert members != null;
                     members.forEach(user -> {
-                        sendToUser(user.id, sendingMessage);
+                        sendToUser(user.getId(), sendingMessage);
                     });
                     return sendingMessage;
                 }
@@ -951,11 +910,11 @@ public class SocketServer {
                 boolean isAdmin = Boolean.parseBoolean(content.split(" ")[1]);
                 if (MessageService.assignGroupAdmin(conversationID, userId, isAdmin)) {
                     // Send the message to other members in the group
-                    List<MemberConversation> members = MessageService.getMemberConversation(conversationID);
+                    List<MemberConversation> members = MessageService.getConversationMembers(conversationID);
                     String sendingMessage = "GROUP ASSIGN_ADMIN OK " + conversationID + " " + Util.serializeObject(members);
                     assert members != null;
                     members.forEach(user -> {
-                        sendToUser(user.id, sendingMessage);
+                        sendToUser(user.getId(), sendingMessage);
                     });
                     return sendingMessage;
                 }
@@ -963,6 +922,30 @@ public class SocketServer {
         }
 
         return "GROUP ERROR Invalid command";
+    }
+
+    private String handleOpenChat(String content) {
+        String[] parts = content.split(" ", 2);
+        int userID = Integer.parseInt(parts[0]);
+        int friendID = Integer.parseInt(parts[1]);
+
+        long conversationID = MessageService.getSingleConversation(userID, friendID);
+        // Conversation not exist, create one
+        if (conversationID == -1) {
+            conversationID = MessageService.createSingleConversation(userID, friendID);
+        }
+
+        if (conversationID == -1) {
+            return "OPEN_CHAT ERROR Failed to create new conversation";
+        }
+
+        ChatList chatList = new ChatList();
+        chatList.conversationID = conversationID;
+        chatList.conversationName = Objects.requireNonNull(CustomerService.getCustomerByID(friendID)).getName();
+        chatList.isGroup = false;
+        chatList.latestTime = new Timestamp(System.currentTimeMillis());
+
+        return "OPEN_CHAT OK " + conversationID + " " + Util.serializeObject(chatList);
     }
 
     private void sendToUser(int userID, String message) {

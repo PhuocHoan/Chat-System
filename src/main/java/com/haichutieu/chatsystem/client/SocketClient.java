@@ -159,6 +159,9 @@ public class SocketClient {
             case "BLOCK":
                 FriendsController.handleBlock(parts[1]);
                 break;
+            case "OPEN_CHAT":
+                FriendsController.onOpenChatWith(parts[1]);
+                break;
 
             // Commands for ADMIN
             case "LOGIN_ADMIN":

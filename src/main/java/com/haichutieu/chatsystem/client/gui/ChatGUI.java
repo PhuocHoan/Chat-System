@@ -596,7 +596,7 @@ public class ChatGUI {
 
     // when user send message to a conversation or message from another conversation comes in
     public void receiveMessage(ChatList conversation, MessageConversation message) {
-        if (message.senderID == SessionManager.getInstance().getCurrentUser().getId()) {
+        if (message.senderID != null && message.senderID == SessionManager.getInstance().getCurrentUser().getId()) {
             conversation.isSeen = true;
             conversation.conversationName = isFocusingConversation.conversationName;
         }
@@ -619,10 +619,6 @@ public class ChatGUI {
                     }
             );
         }
-    }
-
-    public void createGroup(ChatList conversation) {
-        addNewConversation(conversation);
     }
 
     public void updateGroupName(ChatList conversation) {
@@ -753,7 +749,7 @@ public class ChatGUI {
 
             // ADD_GROUP_MEMBER conversation_id [member_ids]
             String json = Util.serializeObject(addedMembersList.stream().map(Customer::getId).toList());
-            ChatAppController.addGroupMember(conversation.conversationID, json);
+            ChatAppController.addGroupMember(conversation, json, addedMembersList.stream().toList());
             stage.close();
         });
 
@@ -764,13 +760,14 @@ public class ChatGUI {
 
     private void renderGroupMembers(long conversationID, List<MemberConversation> members) {
         if (isFocusingConversation != null && isFocusingConversation.conversationID == conversationID) {
-            int numberOfAdmins = (int) members.stream().filter(x -> x.isAdmin).count();
+            int numberOfAdmins = (int) members.stream().filter(MemberConversation::getIsAdmin).count();
             int myId = SessionManager.getInstance().getCurrentUser().getId();
-            boolean isMeAdmin = members.stream().anyMatch(x -> x.id == myId && x.isAdmin);
+            boolean isMeAdmin = members.stream().anyMatch(x -> x.getId() == myId && x.getIsAdmin());
+            ChatList conversation = conversations.stream().filter(x -> x.conversationID == conversationID).findFirst().orElse(null);
             Platform.runLater(() -> {
                 groupMemberContainer.getChildren().clear();
                 members.forEach(member -> {
-                    groupMemberContainer.getChildren().add(createMemberPane(member, conversationID, numberOfAdmins, isMeAdmin));
+                    groupMemberContainer.getChildren().add(createMemberPane(member, conversation, numberOfAdmins, isMeAdmin));
                 });
             });
         }
@@ -783,27 +780,27 @@ public class ChatGUI {
     public void onAddGroupMember(long conversationID, List<MemberConversation> members) {
         // If the user is added to the group is ME, the group chat ChatList will be added
         int myID = SessionManager.getInstance().getCurrentUser().getId();
-        if (members.stream().anyMatch(member -> member.id == myID)) {
+        if (members.stream().anyMatch(member -> member.getId() == myID)) {
             ChatAppController.getChatList();
         }
 
-        memberConversation.put(conversationID, members.stream().map(member -> member.id).toList());
+        memberConversation.put(conversationID, members.stream().map(member -> member.getId()).toList());
         renderGroupMembers(conversationID, members);
     }
 
     public void onRemoveGroupMember(long conversationID, List<MemberConversation> members) {
-        // If the user is removed from the group is ME, the group chat will be closed
-        int myID = SessionManager.getInstance().getCurrentUser().getId();
-        if (members.stream().noneMatch(member -> member.id == myID)) {
-            conversations.removeIf(conversation -> conversation.conversationID == conversationID);
-            Platform.runLater(() -> {
-                mainChatContainer.setVisible(false);
-                rightSideBar.setVisible(false);
-            });
-        }
-
-        memberConversation.put(conversationID, members.stream().map(member -> member.id).toList());
+        memberConversation.put(conversationID, members.stream().map(member -> member.getId()).toList());
         renderGroupMembers(conversationID, members);
+    }
+
+    public void onRemoveGroupMember(long conversationID) {
+        conversations.removeIf(conversation -> conversation.conversationID == conversationID);
+        Platform.runLater(() -> {
+            mainChatContainer.setVisible(false);
+            rightSideBarGroup.setVisible(false);
+            isFocusingConversation = null;
+        });
+        ChatAppController.getChatList();
     }
 
     public void onUpdateGroupName(long conversationID, String text) {
@@ -826,11 +823,11 @@ public class ChatGUI {
     }
 
     public void onAssignGroupAdmin(long conversationID, List<MemberConversation> members) {
-        memberConversation.put(conversationID, members.stream().map(member -> member.id).toList());
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
         renderGroupMembers(conversationID, members);
     }
 
-    private GridPane createMemberPane(MemberConversation member, long conversationID, int numberOfAdmins, boolean isMeAdmin) {
+    private GridPane createMemberPane(MemberConversation member, ChatList conversation, int numberOfAdmins, boolean isMeAdmin) {
         GridPane memberName = new GridPane();
         memberName.setHgap(10);
         memberName.setVgap(10);
@@ -853,15 +850,15 @@ public class ChatGUI {
         rowConst2.setPercentHeight(50.0);
         memberName.getRowConstraints().add(rowConst2);
 
-        Text memberNameText = new Text(member.name);
-        if (member.isAdmin) {
+        Text memberNameText = new Text(member.getName());
+        if (member.getIsAdmin()) {
             memberNameText.setFill(Color.rgb(115, 27, 209));
         }
         GridPane.setValignment(memberNameText, BOTTOM);
         memberNameText.setFont(Font.font("System", FontWeight.BOLD, 16));
         memberName.add(memberNameText, 0, 0);
 
-        Text username = new Text(member.username);
+        Text username = new Text(member.getUsername());
         GridPane.setValignment(username, TOP);
         memberName.add(username, 0, 1);
 
@@ -870,7 +867,7 @@ public class ChatGUI {
         MenuButton actions = new MenuButton(" ⋯ ");
 
         // If this member is not an admin, show the "Promote to Admin" option
-        if (!member.isAdmin) {
+        if (!member.getIsAdmin()) {
             MenuItem promote = new MenuItem("Promote to Admin");
             promote.setOnAction(e -> {
                 if (!isMeAdmin) {
@@ -880,7 +877,7 @@ public class ChatGUI {
                     alert.show();
                     return;
                 }
-                ChatAppController.assignGroupAdmin(conversationID, member.id, true);
+                ChatAppController.assignGroupAdmin(conversation.conversationID, member.getId(), true);
             });
             actions.getItems().add(promote);
         } else {
@@ -902,24 +899,24 @@ public class ChatGUI {
                     return;
                 }
 
-                if (member.id == myId) {
+                if (member.getId() == myId) {
                     Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                     alert.setTitle("Remove Admin Role");
                     alert.setHeaderText("Are you sure to remove your Admin role?");
                     alert.showAndWait().ifPresent(response -> {
                         if (response == ButtonType.OK) {
-                            ChatAppController.assignGroupAdmin(conversationID, member.id, false);
+                            ChatAppController.assignGroupAdmin(conversation.conversationID, member.getId(), false);
                         }
                     });
                     return;
                 }
 
-                ChatAppController.assignGroupAdmin(conversationID, member.id, false);
+                ChatAppController.assignGroupAdmin(conversation.conversationID, member.getId(), false);
             });
             actions.getItems().add(demote);
         }
 
-        if (member.id == myId) {
+        if (member.getId() == myId) {
             MenuItem leave = new MenuItem("Leave Group");
             leave.setOnAction(e -> {
                 if (numberOfAdmins == 1 && isMeAdmin) {
@@ -930,7 +927,7 @@ public class ChatGUI {
                     return;
                 }
 
-                ChatAppController.removeGroupMember(conversationID, member.id);
+                ChatAppController.removeGroupMember(conversation, member);
             });
             actions.getItems().add(leave);
         } else {
@@ -944,15 +941,7 @@ public class ChatGUI {
                     return;
                 }
 
-                if (numberOfAdmins == 1) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Error");
-                    alert.setHeaderText("You can't remove the last admin of the group!");
-                    alert.show();
-                    return;
-                }
-
-                ChatAppController.removeGroupMember(conversationID, member.id);
+                ChatAppController.removeGroupMember(conversation, member);
             });
             actions.getItems().add(remove);
         }
@@ -962,16 +951,13 @@ public class ChatGUI {
         return memberName;
     }
 
-    public void openChat(Customer friend) {
-//        // If the conversation with this friend already exists, open it
-//        for (ChatList conversation : conversations) {
-//            if (!conversation.isGroup && conversation.conversationName.equals(friend.getUsername())) {
-//                openConversation(conversation);
-//                return;
-//            }
-//        }
-//        ChatList chat = new ChatList(0, friend.getUsername(), friend.getUsername(), "", new Timestamp(System.currentTimeMillis()), false, false);
-//        addNewConversation(chat);
-//        openConversation(chat);
+    public void openChatWith(ChatList newChatList, boolean isExist) {
+        Platform.runLater(() -> {
+            SceneController.setScene("chat");
+            if (!isExist) {
+                addNewConversation(newChatList);
+            }
+            openConversation(newChatList);
+        });
     }
 }

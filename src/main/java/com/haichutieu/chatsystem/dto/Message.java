@@ -15,8 +15,8 @@ public class Message {
     @Column(name = "conversation_id", nullable = false)
     private long conversationID;
 
-    @Column(name = "customer_id", nullable = false)
-    private int customerID;
+    @Column(name = "customer_id", nullable = true)
+    private Integer customerID;
 
     @Column(name = "time", nullable = false)
     private Timestamp time;
@@ -25,6 +25,13 @@ public class Message {
     private String message;
 
     public Message() {
+    }
+
+    public Message(Long conversationID, Timestamp time, String message) {
+        this.conversationID = conversationID;
+        this.customerID = null;
+        this.time = time;
+        this.message = message;
     }
 
     public Message(Long conversationID, int customerID, Timestamp time, String message) {

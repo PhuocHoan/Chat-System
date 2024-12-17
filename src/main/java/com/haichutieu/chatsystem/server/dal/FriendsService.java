@@ -1,8 +1,6 @@
 package com.haichutieu.chatsystem.server.dal;
 
-import com.haichutieu.chatsystem.dto.Customer;
-import com.haichutieu.chatsystem.dto.FriendList;
-import com.haichutieu.chatsystem.dto.SpamList;
+import com.haichutieu.chatsystem.dto.*;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
@@ -209,6 +207,42 @@ public class FriendsService {
             transaction = session.beginTransaction();
             friendList.setFriend(true);
             session.merge(friendList);
+
+            // Find if there is a conversation between the two users
+            List<Conversation> conversations = session.createNativeQuery("""
+                                select c.*
+                                     from conversation c
+                                     join conversation_member cm on c.id = cm.conversation_id
+                                        and c.is_group = false and cm.customer_id = :id
+                                     join conversation_member cm2 on c.id = cm2.conversation_id
+                                        and cm2.customer_id = :friendID
+                            """, Conversation.class)
+                    .setParameter("id", userID)
+                    .setParameter("friendID", friendID)
+                    .getResultList();
+
+            if (!conversations.isEmpty()) {
+                transaction.commit();
+                return true;
+            }
+
+            // Create conversation between the two users
+            Conversation conversation = new Conversation();
+            conversation.setIsGroup(false);
+            conversation.setCreateDate(new Timestamp(System.currentTimeMillis()));
+            session.persist(conversation);
+
+            // Add the two users to the conversation_members table
+            ConversationMember conversationMembers1 = new ConversationMember();
+            conversationMembers1.setConversationID(conversation.getId());
+            conversationMembers1.setCustomerID(userID);
+            session.persist(conversationMembers1);
+
+            ConversationMember conversationMembers2 = new ConversationMember();
+            conversationMembers2.setConversationID(conversation.getId());
+            conversationMembers2.setCustomerID(friendID);
+            session.persist(conversationMembers2);
+
             transaction.commit();
             return true;
         } catch (Exception e) {

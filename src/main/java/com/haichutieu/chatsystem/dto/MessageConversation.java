@@ -30,6 +30,12 @@ public class MessageConversation {
         this.message = message;
     }
 
+    public MessageConversation(long conversation_id, Timestamp time, String message) {
+        this.conversation_id = conversation_id;
+        this.time = time;
+        this.message = message;
+    }
+
     @Override
     public String toString() {
         return "MessageConversation{" +

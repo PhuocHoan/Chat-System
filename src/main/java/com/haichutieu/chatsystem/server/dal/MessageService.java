@@ -5,6 +5,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public class MessageService {
@@ -101,7 +102,7 @@ public class MessageService {
     }
 
     // get list member of a conversation, for admin
-    public static List<MemberConversation> getMemberConversation(long conversationID) {
+    public static List<MemberConversation> getConversationMembers(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select new MemberConversation(c.id, c.name, c.username, cm.isAdmin)
@@ -171,11 +172,17 @@ public class MessageService {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
-            Message messagePersist = new Message(message.conversation_id, message.senderID, message.time, message.message);
+            Message messagePersist = null;
+            if (message.senderID == null) {
+                messagePersist = new Message(message.conversation_id, message.time, message.message);
+            } else {
+                messagePersist = new Message(message.conversation_id, message.senderID, message.time, message.message);
+            }
+
             session.persist(messagePersist);
 
             for (int member_id : members) {
-                if (member_id == message.senderID) {
+                if (message.senderID != null && member_id == message.senderID) {
                     session.persist(new MessageDisplay(messagePersist, member_id, true));
                     continue;
                 }
@@ -184,10 +191,11 @@ public class MessageService {
             transaction.commit();
             return messagePersist.getId(); // return new message id
         } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
-            e.printStackTrace();
         }
         return -1L;
     }
@@ -259,6 +267,7 @@ public class MessageService {
             for (var memberID : memberIDs) {
                 session.persist(new ConversationMember(newConversation.getId(), memberID, false));
             }
+
             transaction.commit();
             return newConversation.getId();
         } catch (Exception e) {
@@ -296,9 +305,21 @@ public class MessageService {
                       delete from ConversationMember
                       where conversationID = :conversationID and customerID = :memberID
                     """).setParameter("conversationID", conversationID).setParameter("memberID", memberID);
-            int result = q.executeUpdate();
+            int result1 = q.executeUpdate();
+
+            // Delete message_display for the member
+            Query q2 = session.createNativeQuery("""
+                      delete from message_display
+                      where message_id in (
+                        select id from message
+                        where conversation_id = :conversationID
+                      ) and customer_id = :memberID
+                    """).setParameter("conversationID", conversationID).setParameter("memberID", memberID);
+
+            int result2 = q2.executeUpdate();
             transaction.commit();
-            return result > 0;
+
+            return result1 > 0 && result2 > 0;
         } catch (Exception e) {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
@@ -349,5 +370,47 @@ public class MessageService {
             return false;
         }
 
+    }
+
+    public static long getSingleConversation(int userID, int friendID) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            List<Long> conversationIDs = session.createNativeQuery("""
+                    select c.id
+                         from conversation c
+                         join conversation_member cm on c.id = cm.conversation_id
+                            and c.is_group = false and cm.customer_id = :userID
+                         join conversation_member cm2 on c.id = cm2.conversation_id
+                            and cm2.customer_id = :friendID
+                    """, Long.class).setParameter("userID", userID).setParameter("friendID", friendID).getResultList();
+            if (!conversationIDs.isEmpty()) {
+                return conversationIDs.get(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1L;
+    }
+
+    public static long createSingleConversation(int userID, int friendID) {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            // create a new conversation
+            transaction = session.beginTransaction();
+            Conversation conversation = new Conversation();
+            conversation.setIsGroup(false);
+            conversation.setCreateDate(new Timestamp(System.currentTimeMillis()));
+            session.persist(conversation);
+            session.persist(new ConversationMember(conversation.getId(), userID, true));
+            session.persist(new ConversationMember(conversation.getId(), friendID, false));
+            transaction.commit();
+
+            return conversation.getId();
+        } catch (Exception e) {
+            if (transaction != null && transaction.isActive()) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+            return -1L;
+        }
     }
 }
