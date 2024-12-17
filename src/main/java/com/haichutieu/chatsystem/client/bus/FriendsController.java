@@ -5,7 +5,6 @@ import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.gui.ChatGUI;
 import com.haichutieu.chatsystem.client.gui.FriendGUI;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
-import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.dto.Customer;
@@ -13,12 +12,10 @@ import com.haichutieu.chatsystem.util.Util;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Set;
 
 public class FriendsController {
     public static void fetchFriendList(String message) {
         List<Customer> friends;
-        Set<Integer> onlineFriendIds = null;
 
         String[] parts = message.split(" ", 3);
 

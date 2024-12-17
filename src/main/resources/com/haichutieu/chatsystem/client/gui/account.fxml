@@ -121,7 +121,7 @@
                         <Font size="18.0" />
                      </font>
                   </Label>
-                  <Label text="Sex:" GridPane.halignment="RIGHT" GridPane.rowIndex="5">
+                  <Label text="Gender" GridPane.halignment="RIGHT" GridPane.rowIndex="5">
                      <font>
                         <Font size="18.0" />
                      </font>

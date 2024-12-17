@@ -101,8 +101,8 @@ public class MessageService {
         return null;
     }
 
-    // get list member of a conversation, for admin
-    public static List<MemberConversation> getConversationMembers(long conversationID) {
+    // get list member of a conversation full information
+    public static List<MemberConversation> getMemberConversationFullInfo(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
                         select new MemberConversation(c.id, c.name, c.username, cm.isAdmin)
@@ -239,7 +239,7 @@ public class MessageService {
     }
 
     // remove only on my side
-    public static void removeAllMessage(ChatList conversation, int userID) {
+    public static void removeAllMessage(Long conversationID, int userID) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
@@ -247,7 +247,7 @@ public class MessageService {
                       delete from message_display md
                      using message m
                      where m.id = md.message_id and m.conversation_id = :conversation_id and md.customer_id = :userID
-                    """).setParameter("conversation_id", conversation.conversationID).setParameter("userID", userID);
+                    """).setParameter("conversation_id", conversationID).setParameter("userID", userID);
             System.out.println(q.executeUpdate());
             transaction.commit();
         } catch (Exception e) {

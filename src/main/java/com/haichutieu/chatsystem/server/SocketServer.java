@@ -528,19 +528,27 @@ public class SocketServer {
         }
         var memberConversation = MessageService.getMemberConversation(message.conversation_id);
         MessageService.removeMessage(message.id);
-        String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message);
+        String removeMessage = "REMOVE_MESSAGE_ALL " + Util.serializeObject(message) + " END ";
         // send message to all members in same conversation
         assert memberConversation != null;
         memberConversation.forEach(member -> {
-            sendToUser(member, removeMessage);
+            AsynchronousSocketChannel memberChannel = onlineUsers.get(member);
+            var messageConversation = MessageService.getMessageConversation(message.conversation_id, member);
+            String messageServer = removeMessage + Util.serializeObject(messageConversation);
+            if (memberChannel != null) {
+                try {
+                    memberChannel.write(ByteBuffer.wrap((messageServer + "\n").getBytes())).get();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
 
     private String removeAllMessageMe(String content) {
         String[] parts = content.split(" END ", 2);
         try {
-            MessageService.removeAllMessage(Util.deserializeObject(parts[0], new TypeReference<>() {
-            }), Integer.parseInt(parts[1]));
+            MessageService.removeAllMessage(Long.parseLong(parts[0]), Integer.parseInt(parts[1]));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -826,7 +834,7 @@ public class SocketServer {
         String groupName = parts2[0].trim();
         String members = parts2[1].trim();
 
-        List<Integer> memberIDs = Util.deserializeObject(members, new TypeReference<List<Integer>>() {
+        List<Integer> memberIDs = Util.deserializeObject(members, new TypeReference<>() {
         });
         Conversation conversation = new Conversation();
         conversation.setName(groupName);
@@ -857,7 +865,7 @@ public class SocketServer {
             case "ADD_MEMBER":
                 if (MessageService.addMembersToGroupConversation(conversationID, Util.deserializeObject(content, new TypeReference<>() {
                 }))) {
-                    List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
+                    List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
                     if (users != null) {
                         // Send the message to other members in the group
                         String sendingMessage = "GROUP ADD_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
@@ -872,7 +880,7 @@ public class SocketServer {
             case "REMOVE_MEMBER":
                 int memberID = Integer.parseInt(content);
                 if (MessageService.removeMemberFromGroupConversation(conversationID, memberID)) {
-                    List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
+                    List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
                     if (users != null) {
                         // Send the message to other members in the group
                         sendToUser(memberID, "GROUP REMOVE_MEMBER FROM " + conversationID + " null");
@@ -886,7 +894,7 @@ public class SocketServer {
                 return "GROUP REMOVE_MEMBER ERROR " + conversationID;
 
             case "GET_MEMBERS":
-                List<MemberConversation> users = MessageService.getConversationMembers(conversationID);
+                List<MemberConversation> users = MessageService.getMemberConversationFullInfo(conversationID);
                 if (users == null) {
                     return "GROUP GET_MEMBERS ERROR " + conversationID;
                 }
@@ -896,7 +904,7 @@ public class SocketServer {
                 if (MessageService.updateGroupName(conversationID, content)) {
                     // Send the message to other members in the group
                     String sendingMessage = "GROUP UPDATE_NAME OK " + conversationID + " " + content;
-                    List<MemberConversation> members = MessageService.getConversationMembers(conversationID);
+                    List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
                     assert members != null;
                     members.forEach(user -> {
                         sendToUser(user.getId(), sendingMessage);
@@ -910,7 +918,7 @@ public class SocketServer {
                 boolean isAdmin = Boolean.parseBoolean(content.split(" ")[1]);
                 if (MessageService.assignGroupAdmin(conversationID, userId, isAdmin)) {
                     // Send the message to other members in the group
-                    List<MemberConversation> members = MessageService.getConversationMembers(conversationID);
+                    List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
                     String sendingMessage = "GROUP ASSIGN_ADMIN OK " + conversationID + " " + Util.serializeObject(members);
                     assert members != null;
                     members.forEach(user -> {

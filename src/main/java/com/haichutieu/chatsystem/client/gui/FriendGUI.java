@@ -39,6 +39,12 @@ public class FriendGUI {
 
     private static FriendGUI instance;
     private final ProgressIndicator loading = new ProgressIndicator();
+    private final Map<Integer, GridPane> friendGridPaneMap = new HashMap<>();
+    private final ObservableList<Customer> friendInvitations = FXCollections.observableArrayList();
+    private final Map<Integer, GridPane> friendInvitationMap = new HashMap<>();
+    public ObservableList<Customer> friends = FXCollections.observableArrayList();
+    private FilteredList<Customer> filteredFriends;
+
     @FXML
     private GridPane screen;
     @FXML
@@ -57,13 +63,6 @@ public class FriendGUI {
     private TextField userSearchField;
     @FXML
     private Button userSearchButton;
-
-    public ObservableList<Customer> friends = FXCollections.observableArrayList();
-    private FilteredList<Customer> filteredFriends;
-    private Map<Integer, GridPane> friendGridPaneMap = new HashMap<>();
-
-    private ObservableList<Customer> friendInvitations = FXCollections.observableArrayList();
-    private Map<Integer, GridPane> friendInvitationMap = new HashMap<>();
 
     public FriendGUI() {
         instance = this;
@@ -698,7 +697,6 @@ public class FriendGUI {
     }
 
     public void onReceiveNewFriendRequest(Customer friend) {
-        System.out.println("Received new friend request from " + friend.getName());
         friendInvitations.add(friend);
         int userId = SessionManager.getInstance().getCurrentUser().getId();
         SocketClient.getInstance().sendMessages("GET_FRIEND_REQUEST " + userId);
@@ -706,20 +704,17 @@ public class FriendGUI {
     }
 
     public void onNewOnlineUser(int userId) {
-        Platform.runLater(() -> {
-            friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
-                // Change the Online status of the friend
+        Platform.runLater(() -> friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
+            // Change the Online status of the friend
 
-                for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
-                    if (node instanceof TextFlow) {
-                        TextFlow status = (TextFlow) node;
-                        Text statusText = (Text) status.getChildren().get(1);
-                        statusText.setText("Online");
-                        statusText.setStyle("-fx-fill: #99FF66;");
-                    }
+            for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
+                if (node instanceof TextFlow status) {
+                    Text statusText = (Text) status.getChildren().get(1);
+                    statusText.setText("Online");
+                    statusText.setStyle("-fx-fill: #99FF66;");
                 }
-            });
-        });
+            }
+        }));
     }
 
     public void onOfflineUser(int userId) {
