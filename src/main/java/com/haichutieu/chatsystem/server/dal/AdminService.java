@@ -232,4 +232,18 @@ public class AdminService {
             return null;
         }
     }
+
+    public static List<SpamList> fetchSpamList(Timestamp fromDate, Timestamp toDate) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                    select new SpamList(C2.id, S.personID, C1.username, C1.email, C2.username, S.time) 
+                    from SpamList S join Customer C1 on S.personID = C1.id 
+                    join Customer C2 on S.customerID = C2.id 
+                    where S.time >= :fromDate and S.time <= :toDate
+                    """, SpamList.class).setParameter("fromDate", fromDate).setParameter("toDate", toDate).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

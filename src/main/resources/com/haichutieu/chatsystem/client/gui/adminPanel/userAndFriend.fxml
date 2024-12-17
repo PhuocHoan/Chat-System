@@ -137,7 +137,7 @@
                      </HBox.margin>
                   </Label>
                   <DatePicker fx:id="toDate" />
-                  <Button mnemonicParsing="false" onMouseClicked="#submitDateRange" text="Submit">
+                  <Button mnemonicParsing="false" onMouseClicked="#submitDateRange" style="-fx-background-radius: 100;" text="Submit">
                      <HBox.margin>
                         <Insets left="10.0" />
                      </HBox.margin>
@@ -172,7 +172,7 @@
                   </HBox>
                </children>
             </HBox>
-            <Button mnemonicParsing="false" onMouseClicked="#resetAllOnlineUser" text="Reset">
+            <Button mnemonicParsing="false" onMouseClicked="#resetAllOnlineUser" style="-fx-background-radius: 100;" text="Reset">
                <VBox.margin>
                   <Insets left="15.0" />
                </VBox.margin>
