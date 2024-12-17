@@ -2,6 +2,7 @@ package com.haichutieu.chatsystem.client.gui;
 
 import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.bus.ChatAppController;
+import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
@@ -64,6 +65,9 @@ public class ChatGUI {
 
     @FXML
     private VBox chatList;
+
+    @FXML
+    private HBox reportSpam;
 
     @FXML
     private HBox deleteAllMessages;
@@ -476,6 +480,18 @@ public class ChatGUI {
         } else {
             rightSideBarName.setText(chat.conversationName);
             deleteAllMessages.setOnMouseClicked(e -> onRemoveAll());
+            reportSpam.setOnMouseClicked(e -> {
+                Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmation.setTitle("Confirm");
+                confirmation.setHeaderText("Are you sure you want to report " + chat.conversationName + " for spam?");
+                confirmation.showAndWait();
+                if (confirmation.getResult() != ButtonType.OK) {
+                    return;
+                }
+
+                int myId = SessionManager.getInstance().getCurrentUser().getId();
+                ChatAppController.reportSpam(myId, chat.conversationID);
+            });
         }
         mainChatContainer.setVisible(true);
         rightSideBar.setVisible(!chat.isGroup);

@@ -12,7 +12,12 @@ import java.util.Map;
 
 public class AdminController {
     public static void handleLoginAdmin(String message) {
-        AdminLogin.getInstance().onLoginResponse(message);
+        String[] parts = message.split(" ", 2);
+        if (parts[0].equals("OK")) {
+            AdminLogin.getInstance().onLoginResponse(true, null);
+        } else {
+            AdminLogin.getInstance().onLoginResponse(false, parts[1]);
+        }
     }
 
     public static void fetchAccountList(String message) {
@@ -183,5 +188,30 @@ public class AdminController {
         Map<Integer, List<Long>> appUsage = Util.deserializeObject(message, new TypeReference<>() {
         });
         Statistics.getInstance().onFetchAppUsageMonthly(appUsage);
+    }
+
+    public static void onDeleteSpam(String message) {
+        String[] parts = message.split(" ", 3);
+        int customerID = Integer.parseInt(parts[1]);
+        int personID = Integer.parseInt(parts[2]);
+        if (parts[0].equals("OK")) {
+            ReportGUI.getInstance().onDeleteSpam(customerID, personID);
+        }
+    }
+
+    public static void handleNewAccounts(String part) {
+        String[] parts = part.split(" ", 2);
+        if (parts[0].equals("OK")) {
+            try {
+                List<Customer> newAccounts = Util.deserializeObject(parts[1], new TypeReference<>() {
+                });
+                ReportGUI.getInstance().onNewAccountReceived(true, newAccounts);
+            } catch (Exception e) {
+                e.printStackTrace();
+                ReportGUI.getInstance().onNewAccountReceived(false, null);
+            }
+        } else {
+            ReportGUI.getInstance().onNewAccountReceived(false, null);
+        }
     }
 }

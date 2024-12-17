@@ -235,30 +235,7 @@
                   <Insets bottom="20.0" />
                </VBox.margin>
             </Text>
-            <HBox alignment="CENTER_LEFT" prefHeight="51.0" prefWidth="237.0" style="-fx-background-radius: 12;" styleClass="main-chat" VBox.vgrow="NEVER">
-               <children>
-                  <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../../assets/icons/unfriend.png" />
-                     </image>
-                  </ImageView>
-                  <Label text="Remove friend">
-                     <font>
-                        <Font name="System Bold" size="15.0" />
-                     </font>
-                     <HBox.margin>
-                        <Insets left="10.0" right="10.0" />
-                     </HBox.margin>
-                  </Label>
-               </children>
-               <VBox.margin>
-                  <Insets bottom="10.0" />
-               </VBox.margin>
-               <padding>
-                  <Insets left="20.0" right="20.0" />
-               </padding>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" layoutX="20.0" layoutY="214.0" prefHeight="51.0" prefWidth="237.0" style="-fx-background-radius: 12;" styleClass="main-chat">
+            <HBox fx:id="reportSpam" alignment="CENTER_LEFT" layoutX="20.0" layoutY="214.0" prefHeight="51.0" prefWidth="237.0" style="-fx-background-radius: 12;" styleClass="main-chat">
                <children>
                   <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                      <image>
@@ -266,29 +243,6 @@
                      </image>
                   </ImageView>
                   <Label text="Report spam">
-                     <font>
-                        <Font name="System Bold" size="15.0" />
-                     </font>
-                     <HBox.margin>
-                        <Insets left="10.0" right="10.0" />
-                     </HBox.margin>
-                  </Label>
-               </children>
-               <padding>
-                  <Insets left="20.0" right="20.0" />
-               </padding>
-               <VBox.margin>
-                  <Insets bottom="10.0" />
-               </VBox.margin>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" layoutX="20.0" layoutY="278.0" prefHeight="51.0" prefWidth="237.0" style="-fx-background-radius: 12;" styleClass="main-chat">
-               <children>
-                  <ImageView fitHeight="28.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../../assets/icons/block.png" />
-                     </image>
-                  </ImageView>
-                  <Label text="Block">
                      <font>
                         <Font name="System Bold" size="15.0" />
                      </font>

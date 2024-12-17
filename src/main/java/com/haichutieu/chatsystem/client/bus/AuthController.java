@@ -6,9 +6,12 @@ import com.haichutieu.chatsystem.client.gui.AccountGUI;
 import com.haichutieu.chatsystem.client.gui.ForgotPasswordGUI;
 import com.haichutieu.chatsystem.client.gui.LoginGUI;
 import com.haichutieu.chatsystem.client.gui.SignupGUI;
+import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.util.Util;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 import java.util.List;
 
@@ -124,5 +127,15 @@ public class AuthController {
     // handle login message back from server
     public static void handleForgotPassword(String message) {
         ForgotPasswordGUI.getInstance().forgotPasswordResult(message);
+
+        // if current scene is adminPanel
+        if (SceneController.primaryStage.getScene().equals(SceneController.scenes.get("adminPanel"))) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Reset password");
+                alert.setHeaderText("Password reset! Check user email for new password.");
+                alert.show();
+            });
+        }
     }
 }

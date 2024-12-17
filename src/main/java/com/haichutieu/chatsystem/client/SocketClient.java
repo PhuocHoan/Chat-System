@@ -156,6 +156,12 @@ public class SocketClient {
             case "SPAM":
                 FriendsController.handleSpam(parts[1]);
                 break;
+            case "DELETE_SPAM":
+                AdminController.onDeleteSpam(parts[1]);
+                break;
+            case "SPAM_CONVERSATION":
+                ChatAppController.onReportSpam(parts[1]);
+                break;
             case "BLOCK":
                 FriendsController.handleBlock(parts[1]);
                 break;
@@ -169,6 +175,9 @@ public class SocketClient {
                 break;
             case "FETCH_ACCOUNT_LIST":
                 AdminController.fetchAccountList(parts[1]);
+                break;
+            case "FETCH_NEW_ACCOUNTS":
+                AdminController.handleNewAccounts(parts[1]);
                 break;
             case "FETCH_GROUP_LIST":
                 AdminController.handleGroupList(parts[1]);

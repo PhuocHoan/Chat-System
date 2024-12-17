@@ -190,7 +190,7 @@ public class UserManagement {
                         changePasswordItem.setOnAction(event -> changePassword(getTableRow().getItem()));
 
                         MenuItem resetPasswordItem = new MenuItem("Reset Password");
-                        resetPasswordItem.setOnAction(event -> SocketClient.getInstance().sendMessages("RESET_PASSWORD " + getTableRow().getItem().getId()));
+                        resetPasswordItem.setOnAction(event -> SocketClient.getInstance().sendMessages("RESET_PASSWORD NULL " + getTableRow().getItem().getEmail()));
 
                         MenuItem loginHistoryItem = new MenuItem("View Login History");
                         loginHistoryItem.setOnAction(event -> SocketClient.getInstance().sendMessages("LOGIN_HISTORY USER " + getTableRow().getItem().getId()));
@@ -535,6 +535,10 @@ public class UserManagement {
         gender.setValue("Male");
         grid.add(gender, 1, 6);
 
+        grid.add(new Label("Admin:"), 0, 7);
+        CheckBox isAdmin = new CheckBox("Admin");
+        grid.add(isAdmin, 1, 7);
+
         Button submit = new Button("Create");
         submit.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -559,11 +563,11 @@ public class UserManagement {
             newAccount.setSex(gender.getValue());
             newAccount.setCreateDate(new Timestamp(System.currentTimeMillis()));
             newAccount.setIsLock(false);
-            newAccount.setAdmin(false);
+            newAccount.setAdmin(isAdmin.isSelected());
 
             SocketClient.getInstance().sendMessages("ADD_ACCOUNT " + Util.serializeObject(newAccount));
         });
-        grid.add(submit, 0, 7, 2, 1);
+        grid.add(submit, 0, 8, 2, 1);
 
         Scene scene = new Scene(grid, 400, 400);
         stage.setScene(scene);

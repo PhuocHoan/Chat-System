@@ -10,7 +10,7 @@ import java.util.*;
 public class AdminService {
     public static List<SpamList> fetchAllSpamList() {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
-            return session.createQuery("select new SpamList(S.personID, C1.username, C1.email, C2.username, S.time) " +
+            return session.createQuery("select new SpamList(C2.id, S.personID, C1.username, C1.email, C2.username, S.time) " +
                     "from SpamList S join Customer C1 on S.personID = C1.id " +
                     "join Customer C2 on S.customerID = C2.id " +
                     "where C1.isLock = false", SpamList.class).getResultList();
@@ -91,11 +91,11 @@ public class AdminService {
     // get list member of a conversation
     public static List<MemberConversation> getMemberConversation(long conversationID) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
-            return session.createNativeQuery("""
-                        select new MemberConversation(c.id, c.name, cm.is_admin)
-                        from conversation_member cm join customer c
-                        on cm.customer_id = c.id
-                        where cm.conversation_id = :conversationID
+            return session.createQuery("""
+                        select new MemberConversation(c.id, c.name, cm.isAdmin)
+                        from ConversationMember cm join Customer c
+                        on cm.customerID = c.id
+                        where cm.conversationID = :conversationID
                     """, MemberConversation.class).setParameter("conversationID", conversationID).getResultList();
         } catch (Exception e) {
             e.printStackTrace();
@@ -191,6 +191,45 @@ public class AdminService {
             });
 
             return appUsageCount;
+        }
+    }
+
+    public static boolean deleteSpam(int customerId, int spamId) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            session.beginTransaction();
+            session.createNativeQuery("""
+                    DELETE FROM spam_list
+                    WHERE customer_id = :customerId AND person_id = :spamId
+                    """).setParameter("customerId", customerId).setParameter("spamId", spamId).executeUpdate();
+            session.getTransaction().commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static List<Customer> fetchNewAccounts(int rows) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                    from Customer c
+                    order by c.createDate desc
+                    """, Customer.class).setMaxResults(rows).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static Customer getAdminAccount(String username) {
+        try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
+            return session.createQuery("""
+                    from Customer c
+                    where c.username = :username and c.isAdmin = true
+                    """, Customer.class).setParameter("username", username).getSingleResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

@@ -81,25 +81,26 @@ public class AdminLogin {
         alert.showAndWait();
     }
 
-    public void onLoginResponse(String response) {
+    public void onLoginResponse(boolean status, String message) {
         Platform.runLater(() -> {
-            switch (response.split(" ")[0]) {
-                case "OK":
-                    // Open the admin panel
-                    try {
-                        SceneController.addScene("adminPanel", "gui/adminPanel/adminPanel.fxml", "../stylesheets/adminPanel.css");
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    SceneController.setScene("adminPanel");
-                    break;
-                case "INCORRECT":
-                    showAlert("Error", "Incorrect username or password", "Please try again");
-                    break;
-                case "PROHIBITED":
-                    showAlert("Error", "Access prohibited", "You do not have permission to access the admin panel");
-                    break;
+            if (status) {
+                // Open the admin panel
+                try {
+                    SceneController.addScene("adminPanel", "gui/adminPanel/adminPanel.fxml", "../stylesheets/adminPanel.css");
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                SceneController.setScene("adminPanel");
+                return;
             }
+
+            // Show an error message
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Login failed");
+            alert.setContentText(message);
+            alert.show();
+            return;
         });
     }
 }

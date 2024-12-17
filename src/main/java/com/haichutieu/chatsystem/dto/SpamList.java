@@ -30,7 +30,8 @@ public class SpamList {
     public SpamList() {
     }
 
-    public SpamList(int personID, String username, String email, String userReported, Timestamp time) {
+    public SpamList(int userID, int personID, String username, String email, String userReported, Timestamp time) {
+        this.customerID = userID;
         this.personID = personID;
         this.time = time;
         this.username = username;

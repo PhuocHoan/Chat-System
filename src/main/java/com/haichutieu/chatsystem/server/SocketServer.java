@@ -145,6 +145,8 @@ public class SocketServer {
                 return handleAnswerInvitation(content);
             case "SPAM":
                 return handleSpamReport(content);
+            case "SPAM_CONVERSATION":
+                return handleSpamConversation(content);
             case "BLOCK":
                 return handleBlock(content);
             case "CHAT_LIST":
@@ -187,6 +189,8 @@ public class SocketServer {
                 return handleAdminLogin(content);
             case "FETCH_ACCOUNT_LIST":
                 return handleFetchAccountList();
+            case "FETCH_NEW_ACCOUNTS":
+                return handleFetchNewAccount(content);
             case "FETCH_GROUP_LIST":
                 return handleFetchGroupList();
             case "FETCH_MEMBER_LIST":
@@ -208,6 +212,8 @@ public class SocketServer {
 //            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
             case "SPAM_LIST":
                 return handleSpamList();
+            case "DELETE_SPAM":
+                return handleDeleteSpam(content);
             case "LOCK_ACCOUNT":
                 return handleLockAccount(content);
             case "FRIEND_COUNT":
@@ -224,6 +230,26 @@ public class SocketServer {
                 throw new IllegalStateException("Unexpected value: " + command);
         }
         return null;
+    }
+
+    private String handleSpamConversation(String content) {
+        String[] parts = content.split(" ", 2);
+        int userID = Integer.parseInt(parts[0]);
+        long conversationID = Long.parseLong(parts[1]);
+
+        List<Integer> members = MessageService.getMemberConversation(conversationID);
+        assert members != null;
+        int reportedUserId = members.stream().filter(member -> member != userID).findFirst().orElse(-1);
+
+        if (reportedUserId == -1) {
+            return "SPAM_CONVERSATION ERROR Failed to report conversation";
+        }
+
+        if (!FriendsService.reportSpam(userID, reportedUserId)) {
+            return "SPAM_CONVERSATION ERROR Failed to report conversation";
+        }
+
+        return "SPAM_CONVERSATION OK " + reportedUserId;
     }
 
     private String handleAnswerInvitation(String content) {
@@ -661,10 +687,16 @@ public class SocketServer {
         String[] parts = content.split(" ");
         String username = parts[0];
         String password = parts[1];
-        if (username.equals("admin") && password.equals("admin")) {
-            return "LOGIN_ADMIN OK";
+
+        Customer account = AdminService.getAdminAccount(username);
+
+        if (account != null) {
+            if (BCrypt.checkpw(password, account.getPassword())) {
+                return "LOGIN_ADMIN OK null";
+            }
         }
-        return "LOGIN_ADMIN INCORRECT";
+
+        return "LOGIN_ADMIN INCORRECT Username or password is incorrect";
     }
 
     private String handleFetchAccountList() {
@@ -735,7 +767,8 @@ public class SocketServer {
 
     private String handleLoginHistory(String content) {
         if (content.startsWith("ALL")) {
-            List<UserLoginTime> loginTimes = HistoryService.fetchAllLoginHistory();
+            int rows = Integer.parseInt(content.split(" ", 2)[1]);
+            List<UserLoginTime> loginTimes = HistoryService.fetchAllLoginHistory(rows);
             if (loginTimes == null) {
                 return "LOGIN_HISTORY ALL ERROR";
             }
@@ -965,6 +998,26 @@ public class SocketServer {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private String handleDeleteSpam(String content) {
+        String[] parts = content.split(" ", 2);
+        int customerId = Integer.parseInt(parts[0]);
+        int spamId = Integer.parseInt(parts[1]);
+
+        if (!AdminService.deleteSpam(customerId, spamId)) {
+            return "DELETE_SPAM ERROR " + customerId + " " + spamId;
+        }
+        return "DELETE_SPAM OK " + customerId + " " + spamId;
+    }
+
+    private String handleFetchNewAccount(String content) {
+        int rows = Integer.parseInt(content);
+        List<Customer> newAccounts = AdminService.fetchNewAccounts(rows);
+        if (newAccounts == null) {
+            return "FETCH_NEW_ACCOUNTS ERROR Failed to fetch new accounts";
+        }
+        return "FETCH_NEW_ACCOUNTS OK " + Util.serializeObject(newAccounts);
     }
 
     private static class SocketServerHelper {

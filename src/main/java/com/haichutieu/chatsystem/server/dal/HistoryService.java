@@ -16,12 +16,12 @@ public class HistoryService {
         return null;
     }
 
-    public static List<UserLoginTime> fetchAllLoginHistory() {
+    public static List<UserLoginTime> fetchAllLoginHistory(int rows) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("select new UserLoginTime(C.id, C.username, C.name, L.time) " +
                     "from Customer C join LoginTime L on C.id = L.customerID " +
                     "where L.isOnline = true " +
-                    "order by L.time DESC", UserLoginTime.class).getResultList();
+                    "order by L.time DESC", UserLoginTime.class).setMaxResults(rows).getResultList();
         } catch (Exception e) {
             e.printStackTrace();
         }

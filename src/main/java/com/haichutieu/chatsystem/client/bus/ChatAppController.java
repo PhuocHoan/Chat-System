@@ -6,6 +6,7 @@ import com.haichutieu.chatsystem.client.gui.ChatGUI;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
+import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.MemberConversation;
 import com.haichutieu.chatsystem.dto.MessageConversation;
 import com.haichutieu.chatsystem.util.Util;
@@ -277,5 +278,28 @@ public class ChatAppController {
                 ChatGUI.getInstance().onAssignGroupAdmin(conversationID, members);
                 break;
         }
+    }
+
+    public static void reportSpam(int userId, long conversationID) {
+        SocketClient.getInstance().sendMessages("SPAM_CONVERSATION " + userId + " " + conversationID);
+    }
+
+    public static void onReportSpam(String message) {
+        if (message.startsWith("ERROR")) {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Failed to report spam.");
+                alert.show();
+            });
+            return;
+        }
+
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Report Spam");
+            alert.setHeaderText("Report spam successfully.");
+            alert.show();
+        });
     }
 }

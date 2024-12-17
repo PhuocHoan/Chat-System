@@ -6,14 +6,13 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" spacing="15.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.ReportGUI">
+<HBox spacing="15.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.ReportGUI">
    <children>
       <VBox stylesheets="@adminPanel.css" HBox.hgrow="ALWAYS">
          <children>
@@ -93,7 +92,7 @@
                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                      </VBox.margin>
                   </HBox>
-                  <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="SOMETIMES">
+                  <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true" VBox.vgrow="SOMETIMES">
                      <content>
                         <TableView fx:id="loginTable">
                            <columnResizePolicy>
@@ -129,7 +128,12 @@
                         <HBox alignment="CENTER_LEFT" spacing="5.0" VBox.vgrow="SOMETIMES">
                            <children>
                               <Label text="Search" />
-                              <TextField style="-fx-background-radius: 50;" />
+                              <TextField fx:id="newUserSearchField" style="-fx-background-radius: 50;" />
+                              <ChoiceBox fx:id="newAccountFilter">
+                                 <HBox.margin>
+                                    <Insets left="5.0" />
+                                 </HBox.margin>
+                              </ChoiceBox>
                            </children>
                            <padding>
                               <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
@@ -137,15 +141,9 @@
                         </HBox>
                      </children>
                   </VBox>
-                  <ScrollPane maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="SOMETIMES">
+                  <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true" VBox.vgrow="SOMETIMES">
                      <content>
-                        <TableView>
-                           <columns>
-                              <TableColumn minWidth="100.0" prefWidth="100.0" text="Username" />
-                              <TableColumn minWidth="120.0" prefWidth="120.0" text="Name" />
-                              <TableColumn editable="false" minWidth="150.0" prefWidth="150.0" sortable="false" text="Date Created" />
-                              <TableColumn editable="false" minWidth="150.0" prefWidth="150.0" sortable="false" text="Email" />
-                           </columns>
+                        <TableView fx:id="newUserTable">
                            <columnResizePolicy>
                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                            </columnResizePolicy>

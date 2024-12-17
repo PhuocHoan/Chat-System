@@ -1,6 +1,7 @@
 package com.haichutieu.chatsystem.client.gui.adminPanel;
 
 import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.SpamList;
 import com.haichutieu.chatsystem.dto.UserLoginTime;
 import javafx.application.Platform;
@@ -18,22 +19,41 @@ import java.util.List;
 
 public class ReportGUI {
     private static ReportGUI instance;
-    @FXML
-    TableView<UserLoginTime> loginTable;
-    @FXML
-    TableView<SpamList> spamTable;
-    @FXML
-    DatePicker firstDate;
-    @FXML
-    DatePicker secondDate;
-    @FXML
-    TextField spamSearchField;
-    @FXML
-    ChoiceBox<String> spamFilter;
+
     private ObservableList<UserLoginTime> loginList;
     private ObservableList<SpamList> spamList;
     private FilteredList<SpamList> spamListFiltered;
     private SortedList<SpamList> spamListSorted;
+    private ObservableList<Customer> newAccountList;
+    private FilteredList<Customer> newAccountListFiltered;
+    private SortedList<Customer> newAccountListSorted;
+
+    @FXML
+    TableView<UserLoginTime> loginTable;
+
+    @FXML
+    TableView<SpamList> spamTable;
+
+    @FXML
+    TableView<Customer> newUserTable;
+
+    @FXML
+    DatePicker firstDate;
+
+    @FXML
+    DatePicker secondDate;
+
+    @FXML
+    TextField spamSearchField;
+
+    @FXML
+    TextField newUserSearchField;
+
+    @FXML
+    ChoiceBox<String> spamFilter;
+
+    @FXML
+    ChoiceBox<String> newAccountFilter;
 
     public ReportGUI() {
         instance = this;
@@ -46,9 +66,11 @@ public class ReportGUI {
     @FXML
     public void initialize() {
         SocketClient.getInstance().sendMessages("SPAM_LIST ALL");
-        SocketClient.getInstance().sendMessages("LOGIN_HISTORY ALL");
+        SocketClient.getInstance().sendMessages("LOGIN_HISTORY ALL 50");
+        SocketClient.getInstance().sendMessages("FETCH_NEW_ACCOUNTS 20");
         setupLoginTable();
         setupSpamTable();
+        setupNewAccountTable();
     }
 
     private void setupLoginTable() {
@@ -121,32 +143,79 @@ public class ReportGUI {
         TableColumn<SpamList, Boolean> lockAccountColumn = new TableColumn<>("Action");
         lockAccountColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
         lockAccountColumn.setCellValueFactory(new PropertyValueFactory<>("isLocked"));
-        lockAccountColumn.setCellFactory(column -> new TableCell<>() {
-            private final Button lockButton = new Button("Lock");
+        lockAccountColumn.setCellFactory(column -> {
+            // Create a MenuButton for each customer row
+            // Add actions to the MenuButton
+            return new TableCell<>() {
+                @Override
+                protected void updateItem(Boolean item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty) {
+                        setGraphic(null);
+                    } else {
+                        // Create a MenuButton for each customer row
+                        MenuButton menuButton = new MenuButton("Actions");
 
-            {
-                lockButton.setOnAction(event -> {
-                    SpamList spam = getTableView().getItems().get(getIndex());
-                    SocketClient.getInstance().sendMessages("LOCK_ACCOUNT " + spam.getPersonID());
-                });
-            }
+                        // Add actions to the MenuButton
+                        MenuItem lockItem = new MenuItem("Lock Account");
+                        lockItem.setOnAction(event -> {
+                            SpamList spam = getTableView().getItems().get(getIndex());
+                            SocketClient.getInstance().sendMessages("LOCK_ACCOUNT " + spam.getPersonID());
+                    });
 
-            @Override
-            protected void updateItem(Boolean item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    setGraphic(lockButton);
+                        MenuItem deleteItem = new MenuItem("Remove Report");
+                        deleteItem.setOnAction(event -> {
+                            SpamList spam = getTableView().getItems().get(getIndex());
+                            SocketClient.getInstance().sendMessages("DELETE_SPAM " + spam.getCustomerID() + " " + spam.getPersonID());
+                        });
+
+                        menuButton.getItems().addAll(lockItem, deleteItem);
+                        setGraphic(menuButton);
+                    }
                 }
-            }
+            };
         });
-
 
         spamTable.getColumns().addAll(usernameColumn, emailColumn, reportedColumn, timeColumn, lockAccountColumn);
 
         spamFilter.getItems().addAll("Username", "Email");
         spamFilter.setValue("Username");
+    }
+
+    private void setupNewAccountTable() {
+        TableColumn<Customer, String> usernameColumn = new TableColumn<>("Username");
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        usernameColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+
+        TableColumn<Customer, String> nameColumn = new TableColumn<>("Name");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+
+        TableColumn<Customer, String> emailColumn = new TableColumn<>("Email");
+        emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
+        emailColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+
+        TableColumn<Customer, Timestamp> timeColumn = new TableColumn<>("Created Date");
+        timeColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+        timeColumn.setCellValueFactory(new PropertyValueFactory<>("createDate"));
+        timeColumn.setCellFactory(column -> new TableCell<>() {
+            private final SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+
+            @Override
+            protected void updateItem(Timestamp item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(sdf.format(item));
+                }
+            }
+        });
+
+        newUserTable.getColumns().addAll(usernameColumn, nameColumn, emailColumn, timeColumn);
+
+        newAccountFilter.getItems().addAll("Name", "Email");
+        newAccountFilter.setValue("Name");
     }
 
     public void onLoginHistoryReceived(boolean success, List<UserLoginTime> loginHistory) {
@@ -163,6 +232,69 @@ public class ReportGUI {
             loginTable.getItems().clear();
             loginTable.setItems(loginList);
         });
+    }
+
+    public void onNewAccountReceived(boolean success, List<Customer> accounts) {
+        Platform.runLater(() -> {
+            if (!success) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Failed to fetch new accounts list.");
+                alert.show();
+                return;
+            }
+
+            this.newAccountList = FXCollections.observableArrayList(accounts);
+            newAccountListFiltered = new FilteredList<>(this.newAccountList, p -> true);
+            newAccountListSorted = new SortedList<>(newAccountListFiltered);
+            newUserTable.setItems(newAccountListSorted);
+            newAccountListSorted.comparatorProperty().bind(newUserTable.comparatorProperty());
+
+            newUserSearchField.textProperty().addListener((observable, oldValue, newValue) -> filterNewAccountList());
+            newAccountFilter.valueProperty().addListener((observable, oldValue, newValue) -> filterNewAccountList());
+        });
+    }
+
+    private void filterNewAccountList() {
+        newAccountListFiltered.setPredicate(account -> {
+            if (newUserSearchField.getText() == null || newUserSearchField.getText().isEmpty()) {
+                return true;
+            }
+
+            String lowerCaseFilter = newUserSearchField.getText().toLowerCase();
+            boolean isMatchKeyword;
+            if (newAccountFilter.getValue().equals("Name")) {
+                isMatchKeyword = account.getName().toLowerCase().contains(lowerCaseFilter);
+            } else {
+                isMatchKeyword = account.getEmail().toLowerCase().contains(lowerCaseFilter);
+            }
+
+            return isMatchKeyword;
+        });
+    }
+
+    public void onLockStatusResponse(boolean success, int id) {
+        Platform.runLater(() -> {
+            if (!success) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("Failed to lock account.");
+                alert.show();
+                return;
+            }
+
+            // Delete the locked account from the spam list
+            spamList.removeIf(spam -> spam.getPersonID() == id);
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText("Account #" + id + " locked successfully.");
+            alert.show();
+        });
+    }
+
+    public void onDeleteSpam(int customerID, int personID) {
+        spamList.removeIf(spam -> spam.getCustomerID() == customerID && spam.getPersonID() == personID);
     }
 
     public void onSpamListReceived(boolean success, List<SpamList> spamList) {
@@ -210,26 +342,6 @@ public class ReportGUI {
             }
 
             return isMatchKeyword && isMatchDate;
-        });
-    }
-
-    public void onLockStatusResponse(boolean success, int id) {
-        Platform.runLater(() -> {
-            if (!success) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText("Failed to lock account.");
-                alert.show();
-                return;
-            }
-
-            // Delete the locked account from the spam list
-            spamList.removeIf(spam -> spam.getPersonID() == id);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Success");
-            alert.setHeaderText("Account #" + id + " locked successfully.");
-            alert.show();
         });
     }
 }
