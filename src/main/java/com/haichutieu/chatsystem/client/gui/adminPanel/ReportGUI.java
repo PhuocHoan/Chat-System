@@ -1,6 +1,7 @@
 package com.haichutieu.chatsystem.client.gui.adminPanel;
 
 import com.haichutieu.chatsystem.client.SocketClient;
+import com.haichutieu.chatsystem.client.bus.AdminController;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.dto.SpamList;
 import com.haichutieu.chatsystem.dto.UserLoginTime;
@@ -55,7 +56,7 @@ public class ReportGUI {
 
     @FXML
     public void initialize() {
-        SocketClient.getInstance().sendMessages("SPAM_LIST ALL");
+        AdminController.fetchSpamList(null, null);
         SocketClient.getInstance().sendMessages("LOGIN_HISTORY ALL 50");
         SocketClient.getInstance().sendMessages("FETCH_NEW_ACCOUNTS 20");
         setupLoginTable();
@@ -326,14 +327,25 @@ public class ReportGUI {
                 isMatchKeyword = spam.getEmail().toLowerCase().contains(lowerCaseFilter);
             }
 
-            boolean isMatchDate = true;
-            if (firstDate.getValue() != null || secondDate.getValue() != null) {
-                Timestamp first = firstDate.getValue() == null ? new Timestamp(0) : Timestamp.valueOf(firstDate.getValue().atStartOfDay());
-                Timestamp second = secondDate.getValue() == null ? new Timestamp(System.currentTimeMillis()) : Timestamp.valueOf(secondDate.getValue().atStartOfDay());
-                isMatchDate = spam.getTime().after(first) && spam.getTime().before(second);
-            }
-
-            return isMatchKeyword && isMatchDate;
+            return isMatchKeyword;
         });
+    }
+
+    public void onSubmitSpamDate() {
+        if (firstDate.getValue() == null || secondDate.getValue() == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Filter Date Range");
+            alert.setHeaderText("Please select both from and to date.");
+            alert.show();
+            return;
+        }
+        AdminController.fetchSpamList(Timestamp.valueOf(firstDate.getValue().atStartOfDay()), Timestamp.valueOf(secondDate.getValue().atStartOfDay()));
+    }
+
+    public void onResetSpamDate() {
+        spamSearchField.clear();
+        firstDate.setValue(null);
+        secondDate.setValue(null);
+        filterSpamList();
     }
 }

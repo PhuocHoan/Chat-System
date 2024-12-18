@@ -137,8 +137,8 @@ public class FriendsService {
         }
     }
 
-    // Search for users with name or username like "prompt"
-    // not friends with userID and not block userID
+    // Search for users with name or username contains "prompt"
+    // not block userID
     public static List<Customer> fetchUsers(int userID, String prompt) {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             return session.createQuery("""
@@ -147,16 +147,10 @@ public class FriendsService {
                                      where c.id != :id
                                         and not exists (
                                             select 1
-                                                from FriendList f
-                                                where (f.customerID = :id and f.friendID = c.id)
-                                                    or (f.friendID = :id and f.customerID = c.id)
-                                        )
-                                        and not exists (
-                                            select 1
                                                 from BlockList b
                                                 where (b.personID = :id and b.customerID = c.id)
                                         )
-                                        and (c.username like :prompt or c.name like :prompt)
+                                        and (c.username ilike :prompt or c.name ilike :prompt)
                             """, Customer.class)
                     .setParameter("id", userID)
                     .setParameter("prompt", "%" + prompt + "%")

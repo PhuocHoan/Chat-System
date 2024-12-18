@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -211,7 +212,7 @@ public class SocketServer {
                 return handleLoginHistory(content);
 //            case "USER_FRIEND_LIST" -> handleUserFriendList(content);
             case "SPAM_LIST":
-                return handleSpamList();
+                return handleSpamList(content);
             case "DELETE_SPAM":
                 return handleDeleteSpam(content);
             case "LOCK_ACCOUNT":
@@ -802,8 +803,19 @@ public class SocketServer {
         return "CHANGE_PASSWORD OK " + id;
     }
 
-    private String handleSpamList() {
-        List<SpamList> spamList = AdminService.fetchAllSpamList();
+    private String handleSpamList(String content) {
+        if (content.startsWith("ALL")) {
+            List<SpamList> spamList = AdminService.fetchAllSpamList();
+            if (spamList == null) {
+                return "SPAM_LIST ERROR";
+            }
+            return "SPAM_LIST OK " + Util.serializeObject(spamList);
+        }
+
+        String[] parts = content.split(" ", 4);
+        Timestamp fromDate = Timestamp.valueOf(parts[1]);
+        Timestamp toDate = Timestamp.valueOf(parts[3]);
+        List<SpamList> spamList = AdminService.fetchSpamList(fromDate, toDate);
         if (spamList == null) {
             return "SPAM_LIST ERROR";
         }

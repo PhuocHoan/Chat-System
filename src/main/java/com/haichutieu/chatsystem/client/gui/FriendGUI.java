@@ -272,9 +272,9 @@ public class FriendGUI {
         MenuItem m2 = new MenuItem("New Group");
         m2.setOnAction(e -> createNewGroup(friend));
         MenuItem m3 = new MenuItem("Unfriend");
-        m3.setOnAction(e -> unfriendFriend(friend, friendCard));
+        m3.setOnAction(e -> unfriendFriend(friend));
         MenuItem m4 = new MenuItem("Block");
-        m4.setOnAction(e -> blockFriend(friend, friendCard));
+        m4.setOnAction(e -> blockFriend(friend));
         MenuItem m5 = new MenuItem("Report Spam");
         m5.setOnAction(e -> reportSpam(friend));
 
@@ -292,17 +292,18 @@ public class FriendGUI {
         FriendsController.openChatWith(myId, friend.getId());
     }
 
-    private void blockFriend(Customer friend, GridPane friendCard) {
+    private void blockFriend(Customer friend) {
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Confirm");
         confirmation.setHeaderText("Are you sure you want to block " + friend.getName() + "?");
-        confirmation.showAndWait();
-        if (confirmation.getResult() != ButtonType.OK) {
-            return;
-        }
-
-        // BLOCK <userId> <friendId>
-        SocketClient.getInstance().sendMessages("BLOCK " + SessionManager.getInstance().getCurrentUser().getId() + " " + friend.getId());
+        confirmation.setContentText("Temporarily you CANNOT undo this action, please consider reporting them for spam instead.");
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) {
+                return;
+            }
+            // BLOCK <userId> <friendId>
+            SocketClient.getInstance().sendMessages("BLOCK " + SessionManager.getInstance().getCurrentUser().getId() + " " + friend.getId());
+        });
     }
 
     private void reportSpam(Customer user) {
@@ -319,7 +320,7 @@ public class FriendGUI {
     }
 
 
-    private void unfriendFriend(Customer friend, GridPane friendCard) {
+    private void unfriendFriend(Customer friend) {
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setTitle("Confirm");
         confirmation.setHeaderText("Are you sure you want to unfriend " + friend.getName() + "?");
@@ -497,7 +498,7 @@ public class FriendGUI {
 
     @FXML
     private void searchForUsers() {
-        String prompt = userSearchField.getText();
+        String prompt = userSearchField.getText().toLowerCase();
         if (prompt.isBlank()) {
             return;
         }
@@ -592,13 +593,29 @@ public class FriendGUI {
         MenuButton actions = new MenuButton("Actions");
         MenuItem m1 = new MenuItem("Chat");
         m1.setOnAction(e -> chatWithPerson(user));
-//        MenuItem m2 = new MenuItem("New Group");
-//        m2.setOnAction(e -> createNewGroup(user));
-        MenuItem m3 = new MenuItem("Add Friend");
-        m3.setOnAction(e -> addFriend(user));
+
+        // If user is already a friend, show unfriend option
+        if (friends.stream().anyMatch(f -> f.getId() == user.getId())) {
+            MenuItem m3 = new MenuItem("New Group");
+            m3.setOnAction(e -> createNewGroup(user));
+            actions.getItems().add(m3);
+            MenuItem m2 = new MenuItem("Unfriend");
+            m2.setOnAction(e -> unfriendFriend(user));
+            actions.getItems().add(m2);
+        } else {
+            MenuItem m3 = new MenuItem("Add Friend");
+            m3.setOnAction(e -> addFriend(user));
+            actions.getItems().add(m3);
+        }
+
         MenuItem m4 = new MenuItem("Report Spam");
         m4.setOnAction(e -> reportSpam(user));
-        actions.getItems().addAll(m1, m3, m4);
+
+        MenuItem m5 = new MenuItem("Block");
+        m5.setOnAction(e -> blockFriend(user));
+
+        actions.getItems().addAll(m1, m4, m5);
+
         return actions;
     }
 
