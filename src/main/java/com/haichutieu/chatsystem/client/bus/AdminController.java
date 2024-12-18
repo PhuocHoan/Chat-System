@@ -7,7 +7,6 @@ import com.haichutieu.chatsystem.dto.*;
 import com.haichutieu.chatsystem.util.Util;
 
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -220,7 +219,7 @@ public class AdminController {
         if (value == null && value1 == null) {
             SocketClient.getInstance().sendMessages("SPAM_LIST ALL");
         } else {
-            SocketClient.getInstance().sendMessages("SPAM_LIST FROM " + value + " TO " + value1);
+            SocketClient.getInstance().sendMessages("SPAM_LIST " + value + " END " + value1);
         }
     }
 }

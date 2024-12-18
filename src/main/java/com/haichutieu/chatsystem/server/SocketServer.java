@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -812,9 +811,9 @@ public class SocketServer {
             return "SPAM_LIST OK " + Util.serializeObject(spamList);
         }
 
-        String[] parts = content.split(" ", 4);
-        Timestamp fromDate = Timestamp.valueOf(parts[1]);
-        Timestamp toDate = Timestamp.valueOf(parts[3]);
+        String[] parts = content.split(" END ", 2);
+        Timestamp fromDate = Timestamp.valueOf(parts[0]);
+        Timestamp toDate = Timestamp.valueOf(parts[1]);
         List<SpamList> spamList = AdminService.fetchSpamList(fromDate, toDate);
         if (spamList == null) {
             return "SPAM_LIST ERROR";

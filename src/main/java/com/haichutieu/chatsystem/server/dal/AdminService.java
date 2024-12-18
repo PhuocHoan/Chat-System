@@ -226,7 +226,7 @@ public class AdminService {
             return session.createQuery("""
                     from Customer c
                     where c.username = :username and c.isAdmin = true
-                    """, Customer.class).setParameter("username", username).getSingleResult();
+                    """, Customer.class).setParameter("username", username).uniqueResult();
         } catch (Exception e) {
             e.printStackTrace();
             return null;

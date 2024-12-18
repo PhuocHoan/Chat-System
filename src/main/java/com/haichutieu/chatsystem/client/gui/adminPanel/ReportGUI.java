@@ -133,7 +133,7 @@ public class ReportGUI {
 
         TableColumn<SpamList, Boolean> lockAccountColumn = new TableColumn<>("Action");
         lockAccountColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
-        lockAccountColumn.setCellValueFactory(new PropertyValueFactory<>("isLocked"));
+        lockAccountColumn.setCellValueFactory(new PropertyValueFactory<>("getIsLocked"));
         lockAccountColumn.setCellFactory(column -> {
             // Create a MenuButton for each customer row
             // Add actions to the MenuButton
@@ -347,5 +347,6 @@ public class ReportGUI {
         firstDate.setValue(null);
         secondDate.setValue(null);
         filterSpamList();
+        AdminController.fetchSpamList(null, null);
     }
 }

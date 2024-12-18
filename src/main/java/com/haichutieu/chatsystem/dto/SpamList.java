@@ -64,27 +64,6 @@ public class SpamList {
         this.time = time;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SpamList spamList = (SpamList) o;
-        return customerID == spamList.customerID && personID == spamList.personID;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(customerID, personID);
-    }
-
-    @Override
-    public String toString() {
-        return "SpamList{" +
-                "customerID=" + customerID +
-                ", personID=" + personID +
-                ", time=" + time +
-                '}';
-    }
 
     public String getUsername() {
         return username;
@@ -110,11 +89,33 @@ public class SpamList {
         this.email = email;
     }
 
-    public boolean isLocked() {
+    public boolean getIsLocked() {
         return isLocked;
     }
 
-    public void setLocked(boolean locked) {
+    public void setIsLocked(boolean locked) {
         isLocked = locked;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SpamList spamList = (SpamList) o;
+        return customerID == spamList.customerID && personID == spamList.personID;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(customerID, personID);
+    }
+
+    @Override
+    public String toString() {
+        return "SpamList{" +
+                "customerID=" + customerID +
+                ", personID=" + personID +
+                ", time=" + time +
+                '}';
     }
 }

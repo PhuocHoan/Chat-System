@@ -39,7 +39,7 @@ public class AdminPanel {
 
     @FXML
     void handleUserButtonAction() {
-        if (isFocusingTab.equals("user")) {
+        if (isFocusingTab != null && isFocusingTab.equals("user")) {
             return;
         }
         isFocusingTab = "user";
@@ -50,7 +50,7 @@ public class AdminPanel {
 
     @FXML
     void handleGroupButtonAction() {
-        if (isFocusingTab.equals("group")) {
+        if (isFocusingTab != null && isFocusingTab.equals("group")) {
             return;
         }
         isFocusingTab = "group";
@@ -61,7 +61,7 @@ public class AdminPanel {
 
     @FXML
     void handleUserAndFriendButtonAction() {
-        if (isFocusingTab.equals("userAndFriend")) {
+        if (isFocusingTab != null && isFocusingTab.equals("userAndFriend")) {
             return;
         }
         isFocusingTab = "userAndFriend";
@@ -72,7 +72,7 @@ public class AdminPanel {
 
     @FXML
     void handleReportLogButtonAction() {
-        if (isFocusingTab.equals("report")) {
+        if (isFocusingTab != null && isFocusingTab.equals("report")) {
             return;
         }
         isFocusingTab = "report";
@@ -83,7 +83,7 @@ public class AdminPanel {
 
     @FXML
     void handleStatisticButtonAction() {
-        if (isFocusingTab.equals("statistic")) {
+        if (isFocusingTab != null && isFocusingTab.equals("statistic")) {
             return;
         }
         isFocusingTab = "statistic";
