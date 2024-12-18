@@ -19,7 +19,24 @@ import java.util.List;
 
 public class ReportGUI {
     private static ReportGUI instance;
-
+    @FXML
+    TableView<UserLoginTime> loginTable;
+    @FXML
+    TableView<SpamList> spamTable;
+    @FXML
+    TableView<Customer> newUserTable;
+    @FXML
+    DatePicker firstDate;
+    @FXML
+    DatePicker secondDate;
+    @FXML
+    TextField spamSearchField;
+    @FXML
+    TextField newUserSearchField;
+    @FXML
+    ChoiceBox<String> spamFilter;
+    @FXML
+    ChoiceBox<String> newAccountFilter;
     private ObservableList<UserLoginTime> loginList;
     private ObservableList<SpamList> spamList;
     private FilteredList<SpamList> spamListFiltered;
@@ -27,33 +44,6 @@ public class ReportGUI {
     private ObservableList<Customer> newAccountList;
     private FilteredList<Customer> newAccountListFiltered;
     private SortedList<Customer> newAccountListSorted;
-
-    @FXML
-    TableView<UserLoginTime> loginTable;
-
-    @FXML
-    TableView<SpamList> spamTable;
-
-    @FXML
-    TableView<Customer> newUserTable;
-
-    @FXML
-    DatePicker firstDate;
-
-    @FXML
-    DatePicker secondDate;
-
-    @FXML
-    TextField spamSearchField;
-
-    @FXML
-    TextField newUserSearchField;
-
-    @FXML
-    ChoiceBox<String> spamFilter;
-
-    @FXML
-    ChoiceBox<String> newAccountFilter;
 
     public ReportGUI() {
         instance = this;
@@ -161,7 +151,7 @@ public class ReportGUI {
                         lockItem.setOnAction(event -> {
                             SpamList spam = getTableView().getItems().get(getIndex());
                             SocketClient.getInstance().sendMessages("LOCK_ACCOUNT " + spam.getPersonID());
-                    });
+                        });
 
                         MenuItem deleteItem = new MenuItem("Remove Report");
                         deleteItem.setOnAction(event -> {
@@ -175,6 +165,8 @@ public class ReportGUI {
                 }
             };
         });
+
+        UserAndFriendGUI.getInstance().setupDatePickerRange(firstDate, secondDate);
 
         spamTable.getColumns().addAll(usernameColumn, emailColumn, reportedColumn, timeColumn, lockAccountColumn);
 

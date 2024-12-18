@@ -383,7 +383,7 @@ public class MessageService {
                             and cm2.customer_id = :friendID
                     """, Long.class).setParameter("userID", userID).setParameter("friendID", friendID).getResultList();
             if (!conversationIDs.isEmpty()) {
-                return conversationIDs.get(0);
+                return conversationIDs.getFirst();
             }
         } catch (Exception e) {
             e.printStackTrace();

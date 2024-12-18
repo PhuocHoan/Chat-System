@@ -184,7 +184,7 @@ public class UserAndFriendGUI {
         numberGroupChatWithColumn.setCellValueFactory(new PropertyValueFactory<>("numberGroupChatWith"));
         numberGroupChatWithColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
 
-        setupDatePickerRange();
+        setupDatePickerRange(fromDate, toDate);
 
         onlineUserTable.getColumns().setAll(customerIdColumn, nameColumn, createdDateColumn, loginTimesColumn, numberPeopleChatWithColumn, numberGroupChatWithColumn);
 
@@ -210,7 +210,7 @@ public class UserAndFriendGUI {
         onlineUserSearch.textProperty().addListener((observable, oldValue, newValue) -> onlineUserCountFilter(filteredOnlineUserList));
     }
 
-    private void setupDatePickerRange() {
+    public void setupDatePickerRange(DatePicker fromDate, DatePicker toDate) {
         toDate.setDayCellFactory(new Callback<>() {
             @Override
             public DateCell call(final DatePicker datePicker) {
@@ -279,16 +279,12 @@ public class UserAndFriendGUI {
     @FXML
     void submitDateRange() {
         if (fromDate.getValue() == null || toDate.getValue() == null) {
-            alertError("Filter Date Range", "Please select both from and to date");
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Filter Date Range");
+            alert.setHeaderText("Please select both from and to date");
+            alert.showAndWait();
             return;
         }
         AdminController.fetchOnlineUserCountList(Timestamp.valueOf(fromDate.getValue().atStartOfDay()), Timestamp.valueOf(toDate.getValue().atStartOfDay()));
-    }
-
-    void alertError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(message);
-        alert.showAndWait();
     }
 }

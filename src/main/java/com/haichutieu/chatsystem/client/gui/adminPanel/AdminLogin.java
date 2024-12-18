@@ -66,19 +66,15 @@ public class AdminLogin {
 
     void handleLogin() {
         if (username.getText().isEmpty() || password.getText().isEmpty()) {
-            showAlert("Error", "Empty fields", "Please fill in all fields");
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Empty fields");
+            alert.setContentText("Please fill in all fields");
+            alert.showAndWait();
         } else {
             // Send the username and password to the server
             SocketClient.getInstance().sendMessages("LOGIN_ADMIN " + username.getText() + " " + password.getText());
         }
-    }
-
-    private void showAlert(String title, String header, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(content);
-        alert.showAndWait();
     }
 
     public void onLoginResponse(boolean status, String message) {
@@ -100,7 +96,6 @@ public class AdminLogin {
             alert.setHeaderText("Login failed");
             alert.setContentText(message);
             alert.show();
-            return;
         });
     }
 }

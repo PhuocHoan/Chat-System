@@ -274,6 +274,7 @@ public class SocketServer {
                 return "ANSWER_INVITATION REJECT ERROR " + friendID;
             }
 
+            assert user != null;
             sendToUser(friendID, "ANSWER_INVITATION REJECT FROM " + user.getUsername());
 
             return "ANSWER_INVITATION REJECT OK " + friendID;
@@ -533,9 +534,7 @@ public class SocketServer {
         String sendingMessage = "MESSAGE " + Util.serializeObject(conversation) + " END " + Util.serializeObject(message);
         // send message to all members in same conversation
         assert memberConversation != null;
-        memberConversation.forEach(member -> {
-            sendToUser(member, sendingMessage);
-        });
+        memberConversation.forEach(member -> sendToUser(member, sendingMessage));
     }
 
     private String removeMessageMe(String content) {
@@ -902,9 +901,7 @@ public class SocketServer {
                     if (users != null) {
                         // Send the message to other members in the group
                         String sendingMessage = "GROUP ADD_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
-                        users.forEach(user -> {
-                            sendToUser(user.getId(), sendingMessage);
-                        });
+                        users.forEach(user -> sendToUser(user.getId(), sendingMessage));
                         return sendingMessage;
                     }
                 }
@@ -918,9 +915,7 @@ public class SocketServer {
                         // Send the message to other members in the group
                         sendToUser(memberID, "GROUP REMOVE_MEMBER FROM " + conversationID + " null");
                         String sendingMessage = "GROUP REMOVE_MEMBER OK " + conversationID + " " + Util.serializeObject(users);
-                        users.forEach(user -> {
-                            sendToUser(user.getId(), sendingMessage);
-                        });
+                        users.forEach(user -> sendToUser(user.getId(), sendingMessage));
                         return sendingMessage;
                     }
                 }
@@ -939,9 +934,7 @@ public class SocketServer {
                     String sendingMessage = "GROUP UPDATE_NAME OK " + conversationID + " " + content;
                     List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
                     assert members != null;
-                    members.forEach(user -> {
-                        sendToUser(user.getId(), sendingMessage);
-                    });
+                    members.forEach(user -> sendToUser(user.getId(), sendingMessage));
                     return sendingMessage;
                 }
                 return "GROUP UPDATE_NAME ERROR " + conversationID;
@@ -954,9 +947,7 @@ public class SocketServer {
                     List<MemberConversation> members = MessageService.getMemberConversationFullInfo(conversationID);
                     String sendingMessage = "GROUP ASSIGN_ADMIN OK " + conversationID + " " + Util.serializeObject(members);
                     assert members != null;
-                    members.forEach(user -> {
-                        sendToUser(user.getId(), sendingMessage);
-                    });
+                    members.forEach(user -> sendToUser(user.getId(), sendingMessage));
                     return sendingMessage;
                 }
                 return "GROUP ASSIGN_ADMIN ERROR " + conversationID;
@@ -1024,4 +1015,3 @@ public class SocketServer {
         private static final SocketServer INSTANCE = new SocketServer();
     }
 }
-
