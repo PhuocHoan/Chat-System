@@ -285,6 +285,9 @@ public class UserAndFriendGUI {
             alert.showAndWait();
             return;
         }
+        onlineUserSearch.clear();
+        onlineUserCount.clear();
+        onlineUserCountFilter.setValue("Equals");
         AdminController.fetchOnlineUserCountList(Timestamp.valueOf(fromDate.getValue().atStartOfDay()), Timestamp.valueOf(toDate.getValue().atStartOfDay()));
     }
 }

@@ -339,6 +339,8 @@ public class ReportGUI {
             alert.show();
             return;
         }
+        spamSearchField.clear();
+        spamFilter.setValue("Username");
         AdminController.fetchSpamList(Timestamp.valueOf(firstDate.getValue().atStartOfDay()), Timestamp.valueOf(secondDate.getValue().atStartOfDay()));
     }
 
@@ -346,7 +348,7 @@ public class ReportGUI {
         spamSearchField.clear();
         firstDate.setValue(null);
         secondDate.setValue(null);
-        filterSpamList();
+        spamFilter.setValue("Username");
         AdminController.fetchSpamList(null, null);
     }
 }
