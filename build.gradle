@@ -83,55 +83,55 @@ jlinkZip {
 }
 
 //// Task to create JAR for AdminClient
-task adminJar(type: Jar) {
-    group = "build"
-    description = "Create JAR for AdminClient"
-    archiveClassifier = 'admin'
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(
-                'Main-Class': 'com.haichutieu.chatsystem.client.AdminApp' // Entry point for AdminClient
-        )
-    }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
-    }
-    with jar
-}
+//task adminJar(type: Jar) {
+//    group = "build"
+//    description = "Create JAR for AdminClient"
+//    archiveClassifier = 'admin'
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    manifest {
+//        attributes(
+//                'Main-Class': 'com.haichutieu.chatsystem.client.AdminApp' // Entry point for AdminClient
+//        )
+//    }
+//    from {
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
+//    }
+//    with jar
+//}
 
 // Task to create JAR for UserClient
-task userJar(type: Jar) {
-    group = "build"
-    description = "Create JAR for UserClient"
-    archiveClassifier = 'user'
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(
-                'Main-Class': 'com.haichutieu.chatsystem.client.ClientApp' // Entry point for UserClient
-        )
-    }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
-    }
-    with jar
-}
+//task userJar(type: Jar) {
+//    group = "build"
+//    description = "Create JAR for UserClient"
+//    archiveClassifier = 'user'
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    manifest {
+//        attributes(
+//                'Main-Class': 'com.haichutieu.chatsystem.client.ClientApp' // Entry point for UserClient
+//        )
+//    }
+//    from {
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
+//    }
+//    with jar
+//}
 
 // Task to create JAR for ServerApp
-task serverJar(type: Jar) {
-    group = "build"
-    description = "Create JAR for ServerApp"
-    archiveClassifier = 'server'
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(
-                'Main-Class': 'com.haichutieu.chatsystem.server.ServerApp' // Entry point for ServerApp
-        )
-    }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
-    }
-    with jar
-}
+//task serverJar(type: Jar) {
+//    group = "build"
+//    description = "Create JAR for ServerApp"
+//    archiveClassifier = 'server'
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    manifest {
+//        attributes(
+//                'Main-Class': 'com.haichutieu.chatsystem.server.ServerApp' // Entry point for ServerApp
+//        )
+//    }
+//    from {
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // Include dependencies
+//    }
+//    with jar
+//}
 
 // Ensure the JARs are built as part of the 'build' lifecycle
 build.dependsOn adminJar, userJar, serverJar
