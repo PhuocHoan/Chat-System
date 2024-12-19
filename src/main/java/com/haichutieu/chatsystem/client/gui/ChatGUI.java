@@ -430,9 +430,6 @@ public class ChatGUI {
             } else {
                 circle.setVisible(false);
             }
-        }, 2, 5, TimeUnit.SECONDS); // delay first 2s
-
-        scheduler.scheduleAtFixedRate(() -> {
             if (isFocusingConversation != null && isFocusingConversation.conversationID == chat.conversationID) {
                 String status = circle.isVisible() ? "Online" : "Offline";
                 headerStatus.setText(status);
@@ -442,7 +439,7 @@ public class ChatGUI {
                     rightSideBarStatus.setText(status);
                 }
             }
-        }, 2, 200, TimeUnit.MILLISECONDS); // delay first 2s
+        }, 0, 200, TimeUnit.MILLISECONDS);
 
         conversationInfo.getChildren().addAll(conversationName, conversationTimeStamp);
 
