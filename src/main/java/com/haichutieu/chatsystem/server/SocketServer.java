@@ -901,8 +901,6 @@ public class SocketServer {
         chatList.conversationName = groupName;
         chatList.isGroup = true;
 
-        String message = "CREATE_GROUP " + Util.serializeObject(chatList);
-
         return "CREATE_GROUP OK " + Util.serializeObject(chatList);
     }
 

@@ -464,7 +464,6 @@ public class FriendGUI {
         createGroupStage.showAndWait();
     }
 
-
     public void onBlockError(int friendId) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);

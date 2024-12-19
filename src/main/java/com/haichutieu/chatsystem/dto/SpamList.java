@@ -89,12 +89,12 @@ public class SpamList {
         this.email = email;
     }
 
-    public boolean getIsLocked() {
+    public boolean isLocked() {
         return isLocked;
     }
 
-    public void setIsLocked(boolean locked) {
-        isLocked = locked;
+    public void setLocked(boolean isLocked) {
+        this.isLocked = isLocked;
     }
 
     @Override

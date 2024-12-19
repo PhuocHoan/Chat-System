@@ -34,6 +34,21 @@ public class FriendsService {
         Transaction transaction = null;
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
+
+            // Find if a friend request already exists
+            Query q1 = session.createQuery("""
+                                select f.customerID
+                                     from FriendList f
+                                     where (f.customerID = :id and f.friendID = :friendID)
+                                        or (f.friendID = :id and f.customerID = :friendID)
+                            """, FriendList.class)
+                    .setParameter("id", userID)
+                    .setParameter("friendID", friendID);
+
+            if (!q1.getResultList().isEmpty()) {
+                return false;
+            }
+
             Query q = session.createQuery("""
                                 insert into FriendList(customerID, friendID)
                                 values (:id, :friendID)
@@ -108,23 +123,23 @@ public class FriendsService {
         try (Session session = HibernateUtil.getInstance().getSessionFactory().openSession()) {
             transaction = session.beginTransaction();
 
-            // Remove from friend_list if exists
+            // Find if the blocked user is a friend
             Query q1 = session.createQuery("""
                                 delete from FriendList f
                                      where (f.customerID = :id and f.friendID = :blockedID)
                                         or (f.friendID = :id and f.customerID = :blockedID)
                             """).setParameter("id", userID)
                     .setParameter("blockedID", blockedID);
+            int result = q1.executeUpdate();
 
-            // Add to block_list
-            Query q = session.createQuery("""
+            // Add to block_list if not already blocked
+            Query q2 = session.createQuery("""
                                 insert into BlockList(customerID, personID)
                                 values (:id, :blockedID)
                             """).setParameter("id", userID)
                     .setParameter("blockedID", blockedID);
 
-            int result1 = q1.executeUpdate();
-            int result = q.executeUpdate();
+            int result1 = q2.executeUpdate();
             transaction.commit();
 
             return (result > 0 && result1 > 0);
@@ -132,7 +147,6 @@ public class FriendsService {
             if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
-            System.out.println("[ERROR] Failed to block friend: " + e.getMessage());
             return false;
         }
     }
@@ -146,9 +160,10 @@ public class FriendsService {
                                      from Customer c
                                      where c.id != :id
                                         and not exists (
-                                            select 1
+                                            select b.customerID
                                                 from BlockList b
                                                 where (b.personID = :id and b.customerID = c.id)
+                                                    or (b.customerID = :id and b.personID = c.id)
                                         )
                                         and (c.username ilike :prompt or c.name ilike :prompt)
                             """, Customer.class)

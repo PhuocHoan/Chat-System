@@ -353,7 +353,7 @@ public class ChatGUI {
 
         conversation.getRowConstraints().addAll(row1, row2);
 
-        ImageView conversationAvatar = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(chat.isGroup ? "../../assets/group.png" : "../../assets/avatar.png")).toExternalForm()));
+        ImageView conversationAvatar = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(chat.isGroup ? "assets/group.png" : "assets/avatar.png")).toExternalForm()));
         conversationAvatar.setFitHeight(59);
         conversationAvatar.setFitWidth(55);
         conversationAvatar.setPreserveRatio(true);
@@ -703,6 +703,13 @@ public class ChatGUI {
         // Create a new Button
         Button button = new Button("Change");
         button.setOnAction(event -> {
+            if (textField.getText().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Error");
+                alert.setHeaderText("Group name cannot be empty");
+                alert.showAndWait();
+                return;
+            }
             ChatAppController.updateGroupName(conversation.conversationID, textField.getText());
             stage.close();
         });
@@ -830,6 +837,9 @@ public class ChatGUI {
     }
 
     private void renderGroupMembers(long conversationID, List<MemberConversation> members) {
+        // Put the members in the memberConversation map
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
+
         if (isFocusingConversation != null && isFocusingConversation.conversationID == conversationID) {
             int numberOfAdmins = (int) members.stream().filter(MemberConversation::getIsAdmin).count();
             int myId = SessionManager.getInstance().getCurrentUser().getId();
@@ -864,6 +874,7 @@ public class ChatGUI {
 
     public void onRemoveGroupMember(long conversationID) {
         conversations.removeIf(conversation -> conversation.conversationID == conversationID);
+        memberConversation.remove(conversationID);
         Platform.runLater(() -> {
             mainChatContainer.setVisible(false);
             rightSideBarGroup.setVisible(false);
@@ -874,15 +885,20 @@ public class ChatGUI {
 
     public void onUpdateGroupName(long conversationID, String text) {
         Platform.runLater(() -> {
-            conversations.forEach(conversation -> {
-                if (conversation.conversationID == conversationID) {
-                    conversation.conversationName = text;
+            // Find conversation by conversationID and update the conversation name
+            for (ChatList chat : conversations) {
+                if (chat.conversationID == conversationID) {
+                    chat.conversationName = text;
                     GridPane pane = conversationGridPaneMap.get(conversationID);
                     HBox info = (HBox) pane.getChildren().getLast();
-                    Text content = (Text) info.getChildren().getFirst();
-                    content.setText(text);
+                    if (info != null) {
+                        Text content = (Text) info.getChildren().getFirst();
+                        if (content != null) {
+                            content.setText(text);
+                        }
+                    }
                 }
-            });
+            }
 
             if (isFocusingConversation != null && isFocusingConversation.conversationID == conversationID) {
                 rightSideBarGroupName.setText(text);
