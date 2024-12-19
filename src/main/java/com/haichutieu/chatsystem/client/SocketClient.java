@@ -7,11 +7,16 @@ import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.gui.adminPanel.UserManagement;
 import com.haichutieu.chatsystem.util.Util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+
 
 public class SocketClient {
     private static SocketClient instance = null;
@@ -19,8 +24,24 @@ public class SocketClient {
 
     private SocketClient() {
         try {
+            // Load properties from external file
+            Properties properties = new Properties();
+            // InputStream input = HibernateUtil.class.getClassLoader().getResourceAsStream("com/haichutieu/chatsystem/server-config.properties")
+            try (FileInputStream input = new FileInputStream("client-config.properties")) {
+                if (input == null) {
+                    throw new FileNotFoundException("client-config.properties file not found in the classpath");
+                }
+                properties.load(input);
+            } catch (Exception ex) {
+                System.err.println("Failed to load database configuration properties: " + ex.getMessage());
+                throw new RuntimeException("Could not load database configuration.", ex);
+            }
+
+            String host = properties.getProperty("client.host");
+            int port = Integer.parseInt(properties.getProperty("client.port"));
+
             clientChannel = AsynchronousSocketChannel.open();
-            clientChannel.connect(new InetSocketAddress("localhost", 8080)).get();
+            clientChannel.connect(new InetSocketAddress(host, port)).get();
             System.out.println("Connected to the server.");
             // Start a thread to read messages from the server
             Thread.startVirtualThread(this::readMessages);

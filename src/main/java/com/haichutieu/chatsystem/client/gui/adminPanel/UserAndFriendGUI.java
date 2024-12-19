@@ -24,7 +24,8 @@ import java.util.List;
 public class UserAndFriendGUI {
     private static UserAndFriendGUI instance;
     private final ObservableList<OnlineUserCount> onlineUserList = FXCollections.observableArrayList();
-    private final ObservableList<FriendCount> friendCountList = FXCollections.observableArrayList();
+    private ObservableList<FriendCount> friendCountList = FXCollections.observableArrayList();
+    FilteredList<FriendCount> filteredFriendCountList;
 
     @FXML
     TableView<FriendCount> friendCountTable;
@@ -107,41 +108,48 @@ public class UserAndFriendGUI {
 
         friendCountTable.getColumns().setAll(customerIdColumn, usernameColumn, createdDateColumn, friendCountColumn, friendOfFriendCountColumn);
 
-        FilteredList<FriendCount> filteredFriendCountList = new FilteredList<>(friendCountList, p -> true);
-        SortedList<FriendCount> sortedFriendCountList = new SortedList<>(filteredFriendCountList);
-        sortedFriendCountList.comparatorProperty().bind(friendCountTable.comparatorProperty());
-
         friendCountFilter.getItems().addAll("Equals", "Greater Than", "Less Than");
         friendCountFilter.setValue("Equals");
-        friendCountSearch.textProperty().addListener((observable, oldValue, newValue) -> friendCountFilter(filteredFriendCountList));
-        friendCountFilter.valueProperty().addListener((observable, oldValue, newValue) -> friendCountFilter(filteredFriendCountList));
-        friendUserSearch.textProperty().addListener((observable, oldValue, newValue) -> friendCountFilter(filteredFriendCountList));
     }
 
     public void onFriendCountTable(List<FriendCount> friendCounts) {
-        friendCountList.setAll(friendCounts);
-        friendCountTable.setItems(friendCountList);
+        friendCountList = FXCollections.observableArrayList(friendCounts);
+        filteredFriendCountList = new FilteredList<>(friendCountList, p -> true);
+        SortedList<FriendCount> sortedFriendCountList = new SortedList<>(filteredFriendCountList);
+        friendCountTable.setItems(sortedFriendCountList);
+        sortedFriendCountList.comparatorProperty().bind(friendCountTable.comparatorProperty());
+
+        friendCountSearch.textProperty().addListener((observable, oldValue, newValue) -> friendCountFilter());
+        friendCountFilter.valueProperty().addListener((observable, oldValue, newValue) -> friendCountFilter());
+        friendUserSearch.textProperty().addListener((observable, oldValue, newValue) -> friendCountFilter());
     }
 
-    private void friendCountFilter(FilteredList<FriendCount> filteredFriendCountList) {
+    private void friendCountFilter() {
         filteredFriendCountList.setPredicate(friendCount -> {
             boolean isKeywordMatch = true;
-            if (!(friendUserSearch.getText() == null || friendUserSearch.getText().isEmpty())) {
-                isKeywordMatch = friendCount.getUsername().toLowerCase().contains(friendUserSearch.getText().toLowerCase());
-            }
-
             boolean isCountMatch = true;
-            if (!(friendCountSearch.getText() == null || friendCountSearch.getText().isEmpty())) {
+
+            if (friendCountSearch.getText() == null || friendCountSearch.getText().isEmpty()) {
+                if (friendUserSearch.getText() == null || friendUserSearch.getText().isEmpty()) {
+                    return true;
+                }
+
+                isKeywordMatch = friendCount.getUsername().toLowerCase().contains(friendUserSearch.getText().toLowerCase());
+            } else {
                 long value = Long.parseLong(friendCountSearch.getText());
                 isCountMatch = switch (friendCountFilter.getValue()) {
                     case "Equals" -> (friendCount.getFriendCount() == value);
                     case "Greater Than" -> (friendCount.getFriendCount() > value);
                     case "Less Than" -> (friendCount.getFriendCount() < value);
-                    default -> throw new IllegalStateException("Unexpected value: " + friendCountFilter.getValue());
+                    default -> true;
                 };
+
+                if (!(friendUserSearch.getText() == null || friendUserSearch.getText().isEmpty())) {
+                    isKeywordMatch = friendCount.getUsername().toLowerCase().contains(friendUserSearch.getText().toLowerCase());
+                }
             }
 
-            return isCountMatch && isKeywordMatch;
+            return isKeywordMatch && isCountMatch;
         });
     }
 

@@ -15,7 +15,7 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<GridPane fx:id="screen" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1080.0" prefWidth="1920.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.ChatGUI">
+<GridPane fx:id="screen" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1080.0" prefWidth="1920.0" style="-fx-background-color: linear-gradient(to bottom, #7F51FF, #FF7375);" stylesheets="@../stylesheets/style.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.ChatGUI">
   <columnConstraints>
     <ColumnConstraints hgrow="ALWAYS" maxWidth="-Infinity" minWidth="40.0" percentWidth="4.0" prefWidth="40.0" />
     <ColumnConstraints hgrow="SOMETIMES" percentWidth="26.0" />

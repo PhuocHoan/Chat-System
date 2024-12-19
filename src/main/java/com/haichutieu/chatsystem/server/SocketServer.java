@@ -10,9 +10,7 @@ import javax.mail.Message;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
@@ -24,14 +22,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 public class SocketServer {
-    final String HOST = "localhost";
-    final int PORT = 8080;
     private final Map<Integer, AsynchronousSocketChannel> onlineUsers = new ConcurrentHashMap<>(); // Map<user_id, AsynchronousSocketChannel>
     private final int bufferSize = 1024;
     private AsynchronousServerSocketChannel serverChannel;
+    public static Properties properties;
 
     private SocketServer() {
         try {
+            // Load properties from external file
+            properties = new Properties();
+            // InputStream input = HibernateUtil.class.getClassLoader().getResourceAsStream("com/haichutieu/chatsystem/server-config.properties")
+            try (FileInputStream input = new FileInputStream("server-config.properties")) {
+                if (input == null) {
+                    throw new FileNotFoundException("server-config.properties file not found in the classpath");
+                }
+                properties.load(input);
+            } catch (Exception ex) {
+                System.err.println("Failed to load database configuration properties: " + ex.getMessage());
+                throw new RuntimeException("Could not load database configuration.", ex);
+            }
+
+            final String HOST = properties.getProperty("server.host");
+            final int PORT = Integer.parseInt(properties.getProperty("server.port"));
+
             HibernateUtil.getInstance();
             serverChannel = AsynchronousServerSocketChannel.open().bind(new InetSocketAddress(HOST, PORT));
             System.out.println("Server started at " + HOST + ":" + PORT);
@@ -416,14 +429,8 @@ public class SocketServer {
 
     // send mail to user email to reset password
     void sendEmailResetPassword(String emailAddress, String content) {
-        Properties props = new Properties();
-        try (InputStream input = HibernateUtil.class.getClassLoader().getResourceAsStream("com/haichutieu/chatsystem/config.properties")) {
-            props.load(input);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        String emailUsername = props.getProperty("email.username");
-        String emailPassword = props.getProperty("email.password");
+        String emailUsername = properties.getProperty("email.username");
+        String emailPassword = properties.getProperty("email.password");
 
         Properties mailProps = new Properties();
         mailProps.put("mail.smtp.auth", "true");
@@ -893,8 +900,6 @@ public class SocketServer {
         chatList.conversationID = conversationId;
         chatList.conversationName = groupName;
         chatList.isGroup = true;
-
-        String message = "CREATE_GROUP " + Util.serializeObject(chatList);
 
         return "CREATE_GROUP OK " + Util.serializeObject(chatList);
     }

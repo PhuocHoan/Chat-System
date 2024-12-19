@@ -3,7 +3,7 @@ package com.haichutieu.chatsystem.server.dal;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
-import static com.haichutieu.chatsystem.server.ServerApp.properties;
+import static com.haichutieu.chatsystem.server.SocketServer.properties;
 
 public class HibernateUtil {
     private final SessionFactory sessionFactory;
