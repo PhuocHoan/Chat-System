@@ -86,7 +86,7 @@ public class AdminLogin {
             if (status) {
                 // Open the admin panel
                 try {
-                    SceneController.addScene("adminPanel", "gui/adminPanel/adminPanel.fxml", "../stylesheets/adminPanel.css");
+                    SceneController.addScene("adminPanel", "gui/adminPanel/adminPanel.fxml", "stylesheets/adminPanel.css");
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

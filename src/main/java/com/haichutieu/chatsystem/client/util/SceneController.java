@@ -17,10 +17,10 @@ public class SceneController {
 
     public static void initScenes() {
         try {
-            addScene("login", "gui/login.fxml", "../stylesheets/style.css");
-            addScene("register", "gui/signup.fxml", "../stylesheets/style.css");
-            addScene("forgotPassword", "gui/forgotPassword.fxml", "../stylesheets/style.css");
-            addScene("adminLogin", "gui/adminPanel/adminLogin.fxml", "../stylesheets/style.css");
+            addScene("login", "gui/login.fxml", "stylesheets/style.css");
+            addScene("register", "gui/signup.fxml", "stylesheets/style.css");
+            addScene("forgotPassword", "gui/forgotPassword.fxml", "stylesheets/style.css");
+            addScene("adminLogin", "gui/adminPanel/adminLogin.fxml", "stylesheets/style.css");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -176,9 +176,9 @@ public class SignupGUI {
         Platform.runLater(() -> {
             if (!message.startsWith("ERROR")) {
                 try {
-                    SceneController.addScene("chat", "gui/chat.fxml", "../stylesheets/style.css");
-                    SceneController.addScene("friends", "gui/friends.fxml", "../stylesheets/style.css");
-                    SceneController.addScene("account", "gui/account.fxml", "../stylesheets/style.css");
+                    SceneController.addScene("chat", "gui/chat.fxml", "stylesheets/style.css");
+                    SceneController.addScene("friends", "gui/friends.fxml", "stylesheets/style.css");
+                    SceneController.addScene("account", "gui/account.fxml", "stylesheets/style.css");
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

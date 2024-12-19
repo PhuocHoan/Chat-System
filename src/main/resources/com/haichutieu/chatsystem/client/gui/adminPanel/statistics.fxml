@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox spacing="15.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.Statistics">
+<HBox spacing="15.0" stylesheets="@adminPanel.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.haichutieu.chatsystem.client.gui.adminPanel.Statistics">
    <children>
       <VBox stylesheets="@adminPanel.css" HBox.hgrow="ALWAYS">
          <children>
