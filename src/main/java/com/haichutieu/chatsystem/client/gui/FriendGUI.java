@@ -482,7 +482,11 @@ public class FriendGUI {
             alert.showAndWait();
 
             friends.removeIf(f -> f.getId() == friendId);
-            // displayFriends();
+            String prompt = friendSearchField.getText().toLowerCase();
+            if (!prompt.isBlank()) {
+                // SEARCH_USER <userId> <prompt>
+                SocketClient.getInstance().sendMessages("SEARCH_USER " + SessionManager.getInstance().getCurrentUser().getId() + " " + prompt);
+            }
         });
     }
 
