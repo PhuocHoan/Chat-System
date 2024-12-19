@@ -10,7 +10,6 @@ import com.haichutieu.chatsystem.dto.ChatList;
 import com.haichutieu.chatsystem.dto.Customer;
 import com.haichutieu.chatsystem.util.Util;
 
-import java.sql.Timestamp;
 import java.util.List;
 
 public class FriendsController {

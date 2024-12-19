@@ -5,7 +5,6 @@ import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.Customer;
-import com.haichutieu.chatsystem.dto.SpamList;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -30,10 +29,8 @@ import javafx.stage.Stage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static javafx.geometry.VPos.*;
-import static javafx.scene.layout.GridPane.*;
 
 public class FriendGUI {
 
@@ -632,9 +629,7 @@ public class FriendGUI {
             invitationContainer.getChildren().clear();
             FilteredList<Customer> filteredFriendInvitations = new FilteredList<>(friendInvitations, p -> true);
             // Bind TextField to FilteredList
-            friendRequestSearch.textProperty().addListener((obs, oldValue, newValue) -> {
-                filteredFriendInvitations.setPredicate(friend -> friend.getName().toLowerCase().contains(newValue.toLowerCase()));
-            });
+            friendRequestSearch.textProperty().addListener((obs, oldValue, newValue) -> filteredFriendInvitations.setPredicate(friend -> friend.getName().toLowerCase().contains(newValue.toLowerCase())));
 
             filteredFriendInvitations.addListener((ListChangeListener<Customer>) c -> {
                 while (c.next()) {
@@ -733,20 +728,17 @@ public class FriendGUI {
     }
 
     public void onOfflineUser(int userId) {
-        Platform.runLater(() -> {
-            friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
-                // Change the Online status of the friend
+        Platform.runLater(() -> friends.stream().filter(f -> f.getId() == userId).findFirst().ifPresent(f -> {
+            // Change the Online status of the friend
 
-                for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
-                    if (node instanceof TextFlow) {
-                        TextFlow status = (TextFlow) node;
-                        Text statusText = (Text) status.getChildren().get(1);
-                        statusText.setText("Offline");
-                        statusText.setStyle("-fx-fill: #DDDDDD;");
-                    }
+            for (Node node : friendGridPaneMap.get(f.getId()).getChildren()) {
+                if (node instanceof TextFlow status) {
+                    Text statusText = (Text) status.getChildren().get(1);
+                    statusText.setText("Offline");
+                    statusText.setStyle("-fx-fill: #DDDDDD;");
                 }
-            });
-        });
+            }
+        }));
     }
 
     public void onUnfriendFrom(int friendId) {

@@ -20,7 +20,24 @@ import java.util.List;
 
 public class ReportGUI {
     private static ReportGUI instance;
-
+    @FXML
+    TableView<UserLoginTime> loginTable;
+    @FXML
+    TableView<SpamList> spamTable;
+    @FXML
+    TableView<Customer> newUserTable;
+    @FXML
+    DatePicker firstDate;
+    @FXML
+    DatePicker secondDate;
+    @FXML
+    TextField spamSearchField;
+    @FXML
+    TextField newUserSearchField;
+    @FXML
+    ChoiceBox<String> spamFilter;
+    @FXML
+    ChoiceBox<String> newAccountFilter;
     private ObservableList<UserLoginTime> loginList;
     private ObservableList<SpamList> spamList;
     private FilteredList<SpamList> spamListFiltered;
@@ -28,33 +45,6 @@ public class ReportGUI {
     private ObservableList<Customer> newAccountList;
     private FilteredList<Customer> newAccountListFiltered;
     private SortedList<Customer> newAccountListSorted;
-
-    @FXML
-    TableView<UserLoginTime> loginTable;
-
-    @FXML
-    TableView<SpamList> spamTable;
-
-    @FXML
-    TableView<Customer> newUserTable;
-
-    @FXML
-    DatePicker firstDate;
-
-    @FXML
-    DatePicker secondDate;
-
-    @FXML
-    TextField spamSearchField;
-
-    @FXML
-    TextField newUserSearchField;
-
-    @FXML
-    ChoiceBox<String> spamFilter;
-
-    @FXML
-    ChoiceBox<String> newAccountFilter;
 
     public ReportGUI() {
         instance = this;
@@ -143,7 +133,7 @@ public class ReportGUI {
 
         TableColumn<SpamList, Boolean> lockAccountColumn = new TableColumn<>("Action");
         lockAccountColumn.setStyle("-fx-alignment: BASELINE_CENTER;");
-        lockAccountColumn.setCellValueFactory(new PropertyValueFactory<>("isLocked"));
+        lockAccountColumn.setCellValueFactory(new PropertyValueFactory<>("getIsLocked"));
         lockAccountColumn.setCellFactory(column -> {
             // Create a MenuButton for each customer row
             // Add actions to the MenuButton
@@ -162,7 +152,7 @@ public class ReportGUI {
                         lockItem.setOnAction(event -> {
                             SpamList spam = getTableView().getItems().get(getIndex());
                             SocketClient.getInstance().sendMessages("LOCK_ACCOUNT " + spam.getPersonID());
-                    });
+                        });
 
                         MenuItem deleteItem = new MenuItem("Remove Report");
                         deleteItem.setOnAction(event -> {
@@ -176,6 +166,8 @@ public class ReportGUI {
                 }
             };
         });
+
+        UserAndFriendGUI.getInstance().setupDatePickerRange(firstDate, secondDate);
 
         spamTable.getColumns().addAll(usernameColumn, emailColumn, reportedColumn, timeColumn, lockAccountColumn);
 
@@ -347,6 +339,8 @@ public class ReportGUI {
             alert.show();
             return;
         }
+        spamSearchField.clear();
+        spamFilter.setValue("Username");
         AdminController.fetchSpamList(Timestamp.valueOf(firstDate.getValue().atStartOfDay()), Timestamp.valueOf(secondDate.getValue().atStartOfDay()));
     }
 
@@ -354,6 +348,7 @@ public class ReportGUI {
         spamSearchField.clear();
         firstDate.setValue(null);
         secondDate.setValue(null);
-        filterSpamList();
+        spamFilter.setValue("Username");
+        AdminController.fetchSpamList(null, null);
     }
 }

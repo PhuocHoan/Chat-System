@@ -2,7 +2,6 @@ package com.haichutieu.chatsystem.client.gui;
 
 import com.haichutieu.chatsystem.client.SocketClient;
 import com.haichutieu.chatsystem.client.bus.ChatAppController;
-import com.haichutieu.chatsystem.client.bus.FriendsController;
 import com.haichutieu.chatsystem.client.util.SceneController;
 import com.haichutieu.chatsystem.client.util.SessionManager;
 import com.haichutieu.chatsystem.dto.ChatList;
@@ -42,7 +41,6 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Filter;
 
 import static javafx.geometry.VPos.BOTTOM;
 import static javafx.geometry.VPos.TOP;
@@ -378,7 +376,6 @@ public class ChatGUI {
                 text = "";
             }
         } else {
-            assert chat.senderName != null;
             if (chat.senderName.equals(SessionManager.getInstance().getCurrentUser().getName())) {
                 text = "You: " + chat.latestMessage;
             } else {
@@ -840,9 +837,7 @@ public class ChatGUI {
             ChatList conversation = conversations.stream().filter(x -> x.conversationID == conversationID).findFirst().orElse(null);
             Platform.runLater(() -> {
                 groupMemberContainer.getChildren().clear();
-                members.forEach(member -> {
-                    groupMemberContainer.getChildren().add(createMemberPane(member, conversation, numberOfAdmins, isMeAdmin));
-                });
+                members.forEach(member -> groupMemberContainer.getChildren().add(createMemberPane(member, conversation, numberOfAdmins, isMeAdmin)));
             });
         }
     }
@@ -858,12 +853,12 @@ public class ChatGUI {
             ChatAppController.getChatList();
         }
 
-        memberConversation.put(conversationID, members.stream().map(member -> member.getId()).toList());
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
         renderGroupMembers(conversationID, members);
     }
 
     public void onRemoveGroupMember(long conversationID, List<MemberConversation> members) {
-        memberConversation.put(conversationID, members.stream().map(member -> member.getId()).toList());
+        memberConversation.put(conversationID, members.stream().map(MemberConversation::getId).toList());
         renderGroupMembers(conversationID, members);
     }
 

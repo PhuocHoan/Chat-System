@@ -9,7 +9,7 @@ import javafx.scene.layout.GridPane;
 
 public class AdminPanel {
     TabLoader tabLoader = new TabLoader();
-
+    String isFocusingTab;
     @FXML
     private GridPane tabPane;
 
@@ -39,6 +39,10 @@ public class AdminPanel {
 
     @FXML
     void handleUserButtonAction() {
+        if (isFocusingTab != null && isFocusingTab.equals("user")) {
+            return;
+        }
+        isFocusingTab = "user";
         setSelectedTab(userBtn);
         tabPane.getChildren().removeLast();
         tabPane.add(tabLoader.getPane("userManagement"), 1, 0);
@@ -46,6 +50,10 @@ public class AdminPanel {
 
     @FXML
     void handleGroupButtonAction() {
+        if (isFocusingTab != null && isFocusingTab.equals("group")) {
+            return;
+        }
+        isFocusingTab = "group";
         setSelectedTab(groupBtn);
         tabPane.getChildren().removeLast();
         tabPane.add(tabLoader.getPane("chatGroup"), 1, 0);
@@ -53,6 +61,10 @@ public class AdminPanel {
 
     @FXML
     void handleUserAndFriendButtonAction() {
+        if (isFocusingTab != null && isFocusingTab.equals("userAndFriend")) {
+            return;
+        }
+        isFocusingTab = "userAndFriend";
         setSelectedTab(userAndFriendBtn);
         tabPane.getChildren().removeLast();
         tabPane.add(tabLoader.getPane("userAndFriend"), 1, 0);
@@ -60,6 +72,10 @@ public class AdminPanel {
 
     @FXML
     void handleReportLogButtonAction() {
+        if (isFocusingTab != null && isFocusingTab.equals("report")) {
+            return;
+        }
+        isFocusingTab = "report";
         setSelectedTab(reportBtn);
         tabPane.getChildren().removeLast();
         tabPane.add(tabLoader.getPane("report"), 1, 0);
@@ -67,6 +83,10 @@ public class AdminPanel {
 
     @FXML
     void handleStatisticButtonAction() {
+        if (isFocusingTab != null && isFocusingTab.equals("statistic")) {
+            return;
+        }
+        isFocusingTab = "statistic";
         setSelectedTab(statisticBtn);
         tabPane.getChildren().removeLast();
         tabPane.add(tabLoader.getPane("statistics"), 1, 0);
